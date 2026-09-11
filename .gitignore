@@ -1,0 +1,18 @@
+# STM32CubeIDE / CubeMX build artifacts
+Debug/
+Release/
+build/
+*.o
+*.d
+*.su
+*.elf
+*.hex
+*.bin
+*.map
+
+# IDE metadata
+.settings/
+*.launch
+
+# OS files
+.DS_Store
