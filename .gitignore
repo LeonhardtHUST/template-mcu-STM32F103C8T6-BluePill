@@ -14,5 +14,22 @@ build/
 .settings/
 *.launch
 
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+
+# STM32CubeMX 生成的库、Makefile 与备份（HAL/CMSIS/启动文件/链接脚本由 PlatformIO 提供）
+Drivers/**
+!Drivers/**/.gitkeep
+Makefile
+STM32F103XX_FLASH.ld
+startup_stm32f103xb.s
+.mxproject
+*.ioc.bak
+.workbuddy/
+
 # OS files
 .DS_Store

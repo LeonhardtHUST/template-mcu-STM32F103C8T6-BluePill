@@ -1,0 +1,28 @@
+{
+  // 让 PlatformIO IDE 接管 C/C++ 智能感知配置（自动生成 c_cpp_properties.json）
+  "platformio-ide.autoRebuildAutocompleteIndex": true,
+  "platformio-ide.activateOnlyOnPlatformIOProject": false,
+
+  // 文件树/搜索：隐藏构建产物，避免 CubeMX 库与 framework 库重复跳转
+  "files.exclude": {
+    "**/.pio": true
+  },
+  "search.exclude": {
+    "**/.pio": true,
+    "Drivers": true,
+    "startup": true
+  },
+
+  // .ioc 本质为 ini 格式，按 ini 高亮
+  "files.associations": {
+    "*.ioc": "ini",
+    "*.ld": "linker-script"
+  },
+
+  "editor.formatOnSave": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  "[c]": { "editor.defaultFormatter": "ms-vscode.cpptools" },
+  "[cpp]": { "editor.defaultFormatter": "ms-vscode.cpptools" }
+}

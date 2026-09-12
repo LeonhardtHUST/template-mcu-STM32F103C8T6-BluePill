@@ -1,0 +1,4 @@
+config load stm32-digital-clock.ioc
+SetStructure Advanced
+project generate
+exit

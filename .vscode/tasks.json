@@ -1,0 +1,49 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "STM32CubeMX: Open .ioc",
+      "type": "shell",
+      "windows": {
+        "command": "${env:ProgramFiles}\\STMicroelectronics\\STM32Cube\\STM32CubeMX\\STM32CubeMX.exe",
+        "args": ["${workspaceFolder}\\stm32-digital-clock.ioc"]
+      },
+      "linux": {
+        "command": "STM32CubeMX",
+        "args": ["${workspaceFolder}/stm32-digital-clock.ioc"]
+      },
+      "presentation": { "reveal": "silent" },
+      "problemMatcher": []
+    },
+    {
+      // 无头生成 Core/ 代码；需确认 CubeMX 安装路径，且工作目录为项目根目录
+      "label": "STM32CubeMX: Generate Code (CLI)",
+      "type": "shell",
+      "windows": {
+        "command": "${env:ProgramFiles}\\STMicroelectronics\\STM32Cube\\STM32CubeMX\\STM32CubeMX.exe",
+        "args": ["-q", "${workspaceFolder}\\scripts\\cubemx-generate.mx"]
+      },
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "PlatformIO: Build",
+      "type": "PlatformIO",
+      "task": "Build",
+      "problemMatcher": ["$gcc"],
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "PlatformIO: Upload",
+      "type": "PlatformIO",
+      "task": "Upload",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "PlatformIO: Clean",
+      "type": "PlatformIO",
+      "task": "Clean",
+      "problemMatcher": []
+    }
+  ]
+}

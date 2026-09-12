@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug (OpenOCD / ST-Link)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/.pio/build/genericSTM32F103C8/firmware.elf",
+      "device": "STM32F103C8",
+      "servertype": "openocd",
+      // 使用 PlatformIO 自带的 OpenOCD；若已自行安装可删除下面两行
+      "serverpath": "${env:USERPROFILE}/.platformio/packages/tool-openocd/bin/openocd.exe",
+      "configFiles": ["interface/cmsis-dap.cfg", "target/stm32f1x.cfg"],
+      "svdFile": "${env:USERPROFILE}/.platformio/platforms/ststm32/misc/svd/STM32F103xx.svd",
+      "runToEntryPoint": "main",
+      "preLaunchTask": "PlatformIO: Build"
+    },
+    {
+      "name": "Attach (OpenOCD / CMSIS-DAP)",
+      "type": "cortex-debug",
+      "request": "attach",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/.pio/build/genericSTM32F103C8/firmware.elf",
+      "device": "STM32F103C8",
+      "servertype": "openocd",
+      "serverpath": "${env:USERPROFILE}/.platformio/packages/tool-openocd/bin/openocd.exe",
+      "configFiles": ["interface/stlink.cfg", "target/stm32f1x.cfg"],
+      "svdFile": "${env:USERPROFILE}/.platformio/platforms/ststm32/misc/svd/STM32F103xx.svd"
+    }
+  ]
+}
