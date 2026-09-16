@@ -1,6 +1,7 @@
-# stm32-digital-clock
+# template-mcu-STM32F103C8T6
 
-基于 STM32F103C8T6 的数字时钟，华中科技大学电工基地的招新题目。
+STM32F103C8T6 最小工程模板，默认使用 HSI 8 MHz、PC13 闪灯和 CMSIS-DAP/SWD。
+沿用 `stm32-digital-clock.ioc` 工程文件名；复制模板后可继续直接使用。
 
 本项目采用 **STM32CubeMX + PlatformIO + VS Code** 混合工作流：
 
@@ -74,9 +75,37 @@ stm32-digital-clock.ioc  # CubeMX 配置（唯一事实来源，请用 CubeMX GU
 - **`pio` 命令不存在**：安装 PlatformIO IDE 扩展后重启 VS Code，或 `pip install platformio`。
 - **找不到下载器**：默认走 CMSIS-DAP（`upload_protocol = cmsis-dap`，底层调用 PlatformIO 自带的
   OpenOCD + `interface/cmsis-dap.cfg`）。用 ST-Link 就把 `platformio.ini` 里的
-  `upload_protocol` / `debug_tool` 改回 `stlink`，并同步修改 `.vscode/launch.json` 的 `configFiles`。
+  `upload_protocol` / `debug_tool` 改回 `stlink`，并将 `scripts/openocd-cmsis-dap.cfg` 改用
+  `interface/stlink.cfg` 和 `transport select hla_swd`。
   注意野火 **FireDAP Lite 固件仅支持 SWD，不支持 JTAG**。
 - **SWD 连接失败（`cannot read IDR` / `No ACK`）**：优先检查 SWDIO/SWCLK 是否接反、GND 是否共地、
   目标板是否独立供电；必要时降低 `debug_speed` 或改用「连接时复位」（`connect_assert_srst`）。
 - **重复定义符号**：检查是否把 `Drivers/` 加入编译，或把 `system_stm32f1xx.c` 的排除规则删除了。
 - **Flash 溢出**：PlatformIO 默认链接脚本按 64K 配置，若实际为 128K 需在 `platformio.ini` 中重新指定合适的 `board_build.ldscript`。
+
+## 模板维护与验证
+
+- 固定 ststm32 20.0.0、CubeF1 1.8.7、GCC ARM 7.2.1 和链接脚本包 0.3.0；
+  `.ioc` 使用 CubeMX 6.17.0。升级时需同步验证生成代码与构建，避免单独升级 HAL。
+- `board_build.stm32cube.custom_config_header = yes` 保证使用 `Core/Inc/stm32f1xx_hal_conf.h`。
+- Cortex-Debug 配置支持默认安装目录下的 Windows、Linux/macOS；WSL 使用 Linux 路径，
+  探针还需能够被 WSL 访问。自定义 PlatformIO 安装目录需同步修改调试路径。
+  启动调试使用 PlatformIO 的 Pre-Debug 任务生成调试固件；Attach 不自动构建或烧录。
+- `Core/Src/stdio_port.c` 覆盖 CubeMX 的弱 `_read` / `_write`，适用于当前 newlib 工具链。
+  未提供后端时返回 `-1` 并设置 `errno = ENOSYS`，不会调用不存在的函数。
+  需要串口时，在独立用户源码中实现 `int __io_putchar(int ch)` 和
+  `int __io_getchar(void)`：成功返回字符（0..255），失败返回负数。
+  适配层在失败时返回已完成的字节数，或 `-1` / `EIO`；它本身不初始化 USART。
+  不要把适配逻辑写回会被 CubeMX 重新生成的 `syscalls.c`。
+
+主机回归测试（需要 GCC，不需要开发板）：
+
+```bash
+gcc -std=c11 -Wall -Wextra -Werror Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-test
+/tmp/stdio-test
+gcc -std=c11 -Wall -Wextra -Werror -DTEST_BACKEND Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-backend-test
+/tmp/stdio-backend-test
+pio run
+```
+
+编译通过不代替实板验证：首次使用需检查烧录、PC13 闪灯、断点与 Attach。
