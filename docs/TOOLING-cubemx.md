@@ -175,16 +175,15 @@ exit
 > 文件名的括号是陷阱：`*103C8*` **匹配不到** `STM32F103C(8-B)Tx.xml`。
 > 要搜就用 `*F103*` 或 `*C(8-B)*`。本机实测路径 = `C:\ST\STM32CubeMX\db\mcu\STM32F103C(8-B)Tx.xml`。
 
-本机（`MxCube.Version=6.17.0` / `MxDb.Version=DB.6.0.170`）的实测结果，
-2026-09-24 用 `<Pin Name="PA0...">` 节点重新提取复核过：
+本机实测结果（**版本已更正，见 §3.5**）：
 
-| 引脚 | 可用 TIM2 信号 |
-| ---- | -------------- |
-| `PA0-WKUP` | **`TIM2_CH1`**、`TIM2_ETR` |
+| 引脚 | 库里的原子信号名（查用） | 写进 `.ioc` 的组合名（写用） |
+| ---- | ------------------------ | ---------------------------- |
+| `PA0-WKUP` | `TIM2_CH1`、`TIM2_ETR` | **`S_TIM2_CH1_ETR`** |
 
-于是：`TIM2_CH1_ETR` 在任何版本都不存在；
-`S_TIM2_CH1_ETR` 是 **CubeMX 6.18** 的写法（本机 6.17 数据库里查不到，实测
-连 `S_TIM2_CH1` 这个前缀都不存在，**不要在 6.17 上用**）；本机正确写法是 `TIM2_CH1`。
+于是：`TIM2_CH1_ETR`（无 `S_`）在任何情况下都不对；
+`.ioc` 里必须写**组合名** `S_TIM2_CH1_ETR`；而查"这脚能用什么"要查库里的**原子名**。
+这两者不是一个层面的东西 —— 早期文档把二者混为一谈，是错的。
 
 > **通用结论：不要照抄任何外部文档或记忆里的信号名，一律先查本机 `db\mcu\*.xml`。**
 > 这也是为什么该工具内置了自己维护的引脚→信号对照表。
@@ -207,6 +206,103 @@ exit
   超时后强杀进程树）。裸调 CLI 时请自行加超时。卡住后若日志再无新增，直接杀掉重试即可。
 - 首次在新版本上运行可能弹一次迁移/提示对话框，需要有人点一下；之后一般不再出现。
 - 想批量改 `.ioc` 建议直接用 `cubemx_configure`（带备份 + 路径白名单），比裸手改安全。
+
+---
+
+## 3.5 2026-09-25 端到端复测：更正 + 完整可用配方
+
+把「HSE 8 MHz ×9 = 72 MHz + TIM2_CH1 输入捕获(PA0) + USART1 115200 + PB0 上拉按键」
+整条链路真跑通了一次（沙箱 `_iotest/r5`，生成物 `Core/Src/tim.c` 里有完整 `MX_TIM2_Init`）。
+过程中**推翻了本文档早期的三条结论**：
+
+| 项 | 早期结论（错） | **实测真相** |
+| -- | --- | --- |
+| 本机 CubeMX 版本 | `6.17.0` / `DB.6.0.170` | **`6.18.1` / `DB.6.0.181`**。`.ioc` 里的 6.17.0 是**模板继承的旧戳被原样保留**；要看真实版本必须让 CubeMX 自己 `config save` 一次再看写回值 |
+| PA0 的信号名 | `TIM2_CH1` | `.ioc` 要写**组合名 `S_TIM2_CH1_ETR`**；`db\mcu\*.xml` 列的是原子名。见 §3 更正表 |
+| `-q` 卡死原因 | 卡在更新器/插件扫描（`Updater is busy`） | **真凶是 `ProjectManager.AskForMigrate=true`** → 弹模态迁移框等人点，无头模式永久挂住。`Updater is busy` / `Failed to refresh advertisement data` **只是噪音，不阻塞**（带这行 ERROR 也生成了两次） |
+
+### 3.5.1 卡死根治：关掉 AskForMigrate
+
+```powershell
+# .ioc 里把 ProjectManager.AskForMigrate 改成 false（生成前每次都要关！CubeMX 的 save 会改回 true）
+(Get-Content $ioc -Raw) -replace 'ProjectManager\.AskForMigrate=true', 'ProjectManager.AskForMigrate=false' |
+  Set-Content $ioc -NoNewline -Encoding UTF8
+```
+
+现象特征：`~\.stm32cubemx\STM32CubeMX.log` 停在 `UtilMem:75 - Begin LoadConfig()` 后整段无输出，进程 >300 s 不退出。
+历史上"手点一次 Yes 就好了"正是点了这个框。
+
+### 3.5.2 `cubemx_configure` ≠ `cubemx_new_project`（**关键**）
+
+`cubemx_configure` 是**纯脚本透传**：
+
+```python
+lines = [f'config load "{ap}"']
+lines.extend(commands)            # 你的命令原样喂给 CubeMX -q 脚本引擎
+lines.append(f'config saveas "{ap}"')
+```
+
+它**不做任何文本注入** —— 把 `set ip parameters TIM2 InputCapture ...` 交给它，CubeMX 回 `OK` 然后什么都不做
+（实测：三个命令全 `OK`，`.ioc` 里**一个字节的 TIM2 都没变**）。真正的注入逻辑写在 `cubemx_new_project` 里。
+
+**可用配方（`cubemx_new_project`）**：
+
+```json
+{"project_name": "freqtest", "project_dir": "<绝对路径>", "mcu": "STM32F103C8T6",
+ "clock_source": "HSE", "pll_mul": 9,
+ "commands": ["set ip parameters TIM2 InputCapture PA0-WKUP S_TIM2_CH1_ETR Prescaler 1 Period 65536",
+              "set pin PB0 GPIO_Input",
+              "set pin PA9 USART1_TX", "set pin PA10 USART1_RX", "set mode USART1 Asynchronous"]}
+```
+
+返回 `TIM2 已注入输入捕获标准表达(引脚 PA0-WKUP/S_TIM2_CH1_ETR, IC1 上升沿 + IC2 下降沿, ...)`，
+生成物实测包含：
+
+```c
+void MX_TIM2_Init(void) {
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 1-1;      /* PSC = 0，注意是"未求值表达式"，合法 C */
+  htim2.Init.Period = 65536-1;     /* ARR = 65535 */
+  HAL_TIM_IC_Init(&htim2);
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+  HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_1);
+}
+```
+
+`Prescaler n` / `Period n` 会以 **`n-1` 字面量**写进 `.ioc`（`Prescaler 1` → `1-1`）
+—— 所以**传的是寄存器值**：要 PSC=0/ARR=65535 就传 `Prescaler 1 Period 65536`。
+这也说明 `Period=65536-1` 是 CubeMX 认可的**原生形态**（它自己 `saveas` 也原样保留）。
+
+### 3.5.3 ⛔ TIM 通道参数改不动（CubeMX 6.18.1 的真实限制）
+
+想让 `IC1PSC = ÷8`（本题要求：每 8 个上升沿捕获一次），三种办法**全部失败**，生成代码恒为 `TIM_ICPSC_DIV1`：
+
+| 办法 | 结果 |
+| ---- | ---- |
+| 文本改 `TIM2.IC1Prescaler=TIM_ICPSC_DIV8` | ❌ 生成 DIV1 |
+| `set ip parameters TIM2 IC1Prescaler TIM_ICPSC_DIV8` | ⚠️ **能**改到 `.ioc`（连 CubeMX `saveas` 出的也是 DIV8），但生成仍是 DIV1 |
+| 同一脚本 `config load` → `set` → `project generate` | ❌ 生成 DIV1 |
+
+根因：`config load` 时 CubeMX 会**按 `SH.<signal>.0=...` 表达式重建 TIM 通道模型**，
+通道级参数（`IC1Polarity/IC1Selection/IC1Prescaler/IC1Filter`）用默认值填，**文件里的值被忽略**。
+副作用之一：IC2 参数也会被一起丢掉（`SH` 只声明了 CH1）—— 对本工程恰好是我们想要的。
+
+**对策：`÷8` 写进用户代码**，放 `/* USER CODE BEGIN TIM2_Init 2 */`（CubeMX 不会覆盖）：
+
+```c
+TIM2->CCMR1 = (TIM2->CCMR1 & ~TIM_CCMR1_IC1PSC) | TIM_CCMR1_IC1PSC_1 | TIM_CCMR1_IC1PSC_0; /* ÷8 */
+```
+
+好处：不依赖 CubeMX 的生成行为，重新 generate 也不会丢。
+
+### 3.5.4 其它复测坑
+
+- **`project path` 指到别处 + 未规范化的 `.ioc` → 路径被叠两次**
+  （`…\r9\gen\freqtest\C:\Users\…\r9\gen\freqtest\Core\Src\sysmem.c`）。先生成到 `.ioc` 同目录，或先 `config save` 规范化。
+- **判断"生效"永远看生成物**。`config load` / `set` / `saveas` 可以全 `OK` 而结果全是默认值。
+  要在 `.ioc` 层面判定，用 `config load` + `config saveas` 到新路径再 diff —— **能被保存下来的才是真的**。
 
 ---
 
