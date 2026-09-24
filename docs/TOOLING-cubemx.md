@@ -229,6 +229,23 @@ exit
 `C:\Users\Leon\.workbuddy\mcp-servers\PROJECT-SETUP.md`）。它们**不能替代**上面的
 `vscode-cube-mcp`（一个只改配置、一个只碰硬件），分工如下：
 
+> **先回答一个常见误解：这两个 server 都不管 `.ioc`。**
+> 2026-09-25 对三个 server 各做了一次真实 MCP 握手（`initialize` + `tools/list`），结果：
+>
+> | server | 工具数 | 有 `.ioc` 相关工具吗 |
+> | ------ | ------ | -------------------- |
+> | `vscode-cube-mcp` | 9 | **全部 9 个**都是 `.ioc` 工具 |
+> | `agentic-hil` | 43 | **0 个**（工具族 = probe/flash/debug/COM/CAN/test-reactor/project_config） |
+> | `stm32-stlink`(stmcp) | 19 | **0 个**（工具族 = probe/debug/flash/breakpoint/memory/register） |
+>
+> 原因是文件类型上的硬门槛：
+> - `agentic-hil` 的 `artifacts.allowed_extensions` 默认只有 `[".elf", ".hex", ".bin"]`，
+>   且 `validation.inspect_known_formats=true` —— `.ioc` 会被当成未知格式拒掉。
+>   它唯一的"写配置"工具 `project_config_set` / `project_config_create` 写的是**它自己的 YAML**，不是 `.ioc`。
+> - `stmcp` **根本没有通用的主机文件读写工具**：它能碰的主机文件只有 `debug_connect` 的 `elfPath` 和
+>   `flash_standalone` 的 `file`（都喂给 gdb / Programmer_CLI）。名字像"文件读写"的
+>   `memory_read` / `memory_write` 读的是**目标芯片内存**，是另一回事。
+
 | server | 本工程能否用 | 说明 |
 | ------ | ------------ | ---- |
 | `stm32-stlink`（stmcp） | ❌ **不适用** | 整个架构建立在 `ST-LINK_gdbserver` + `STM32_Programmer_CLI` 之上，两者都只认 ST-LINK。本工程用的是**野火 FireDAP Lite（CMSIS-DAP，仅 SWD）**，stmcp 根本驱动不了 |
