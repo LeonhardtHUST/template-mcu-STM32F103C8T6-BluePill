@@ -42,7 +42,10 @@ Drivers/                 # CubeMX 生成的 HAL/CMSIS 库（不参与 PIO 编译
 scripts/                 # CubeMX 命令行脚本
 .vscode/                 # 任务、调试、推荐扩展配置
 platformio.ini           # PlatformIO 工程配置
-stm32-digital-clock.ioc  # CubeMX 配置（唯一事实来源，请用 CubeMX GUI 修改）
+stm32-digital-clock.ioc  # CubeMX 配置（唯一事实来源）
+AGENTS.md                # agent 工作约束（提交规范 / 硬约束 / 验证关卡）
+TEMPLATE-PLACEHOLDERS.md # 复制模板后需要人工修改的占位符清单
+docs/                    # 补充文档（如 docs/TOOLING-cubemx.md）
 ```
 
 ## 修改外设配置的流程
@@ -53,13 +56,20 @@ stm32-digital-clock.ioc  # CubeMX 配置（唯一事实来源，请用 CubeMX GU
 4. `pio run` 重新编译
 
 无头生成（CI/脚本）可用任务 **STM32CubeMX: Generate Code (CLI)**，脚本见
-`scripts/cubemx-generate.mx`。若相对路径解析失败，请把脚本中的 `.ioc` 路径改为绝对路径，
-并按需修改 `tasks.json` 中 CubeMX 的安装路径。
+`scripts/cubemx-generate.mx`。该脚本用**相对路径**加载 `.ioc`，因此工作目录必须是项目根目录
+（`tasks.json` 已设 `cwd`）。若 CubeMX 不在默认安装目录，需同步改 `tasks.json` 中的路径。
 
 ## 工作流约定（重要）
 
-- **不要手动编辑 `.ioc` 文件**：引脚、时钟、外设参数必须在 STM32CubeMX GUI 中配置并保存。
-  CLI 脚本只负责加载已有 `.ioc` 并生成代码，不能设置外设参数。
+- **`.ioc` 是唯一事实来源；改它的首选方式是 CubeMX GUI。**
+  手改 `.ioc` 文本**并非不可行** —— 实测 CubeMX 的 `-q` 脚本模式确实能接受手写的时钟/外设/GPIO 参数
+  （已验证 HSE+PLL×9=72 MHz、USART1 115200 异步、GPIO 上拉输入都能正确落到生成的 `main.c`）。
+  但 **CubeMX 对 `.ioc` 的错误是非致命的**：信号名这类枚举写错时会**静默丢弃**该外设，
+  `project generate` 仍返回成功，只在日志里留一行 `(OptionalMessage_ERROR) Cannot map signal ...`。
+  所以手改 `.ioc` 后**必须**核验：① 日志里没有 `Cannot map`；② 生成的 `main.c` 里有对应的 `MX_xxx_Init()`。
+  已知陷阱、正确的枚举写法（如 PA0 上 TIM2 通道 1 是 `S_TIM2_CH1_ETR`）见
+  **[`TEMPLATE-PLACEHOLDERS.md`](TEMPLATE-PLACEHOLDERS.md)**。
+  更安全的脚本化路径是用已全局安装的 CubeMX MCP —— 见 [`docs/TOOLING-cubemx.md`](docs/TOOLING-cubemx.md)。
 - HAL / CMSIS / 启动文件 / 链接脚本 **由 PlatformIO 的 framework 提供**，因此：
   - `Core/Src/system_stm32f1xx.c` 已在 `platformio.ini` 中排除，避免与 framework 的 CMSIS 重复定义符号；
   - `Drivers/`、`Makefile` 不参与 PlatformIO 编译，已加入 `.gitignore`；
@@ -68,7 +78,21 @@ stm32-digital-clock.ioc  # CubeMX 配置（唯一事实来源，请用 CubeMX GU
 - 新增外设后，若 `Core/Inc/stm32f1xx_hal_conf.h` 缺少对应 `HAL_XXX_MODULE_ENABLED`，
   在 CubeMX 中重新生成即可（CubeMX 会覆盖该文件，用户代码不要写在该文件里）。
 - 当前时钟配置为默认 HSI 8 MHz。如需 HSE + 72 MHz，请在 CubeMX GUI 的
-  *RCC / Clock Configuration* 中配置，保存后重新生成代码。
+   *RCC / Clock Configuration* 中配置，保存后重新生成代码。
+
+## 模板占位符与初始条件
+
+复制本模板后**必须人工修改**的内容（绝对路径、工程名、工具链前提、已知陷阱）统一列在
+**[`TEMPLATE-PLACEHOLDERS.md`](TEMPLATE-PLACEHOLDERS.md)**。要点：
+
+| 类别 | 例子 |
+| --- | --- |
+| 必须替换 | `scripts/cubemx-init.mx` 的 `__PROJECT_DIR__`；工程名 `stm32-digital-clock`（六处要一起改） |
+| 视硬件而定 | 探针（`cmsis-dap` / `stlink`）、`board`、Flash 容量、CubeMX 安装路径 |
+| 环境前提 | 已装 CubeMX + FW_F1 包、PlatformIO Core、主机 GCC（仅回归测试用） |
+| 已知陷阱 | `formatOnSave` 会重排 `main.c`；`.ioc` 的 `*IPParameters` 白名单；信号名的 `S_` 前缀 |
+
+agent 的工作约束（提交规范、硬约束、验证关卡）见 **[`AGENTS.md`](AGENTS.md)**。
 
 ## 故障排查
 
@@ -101,11 +125,12 @@ stm32-digital-clock.ioc  # CubeMX 配置（唯一事实来源，请用 CubeMX GU
 主机回归测试（需要 GCC，不需要开发板）：
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Werror Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-test
-/tmp/stdio-test
-gcc -std=c11 -Wall -Wextra -Werror -DTEST_BACKEND Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-backend-test
-/tmp/stdio-backend-test
+# Linux / macOS
+gcc -std=c11 -Wall -Wextra -Werror Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-test && /tmp/stdio-test
+gcc -std=c11 -Wall -Wextra -Werror -DTEST_BACKEND Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-backend-test && /tmp/stdio-backend-test
 pio run
 ```
+
+Windows 下把输出路径 `/tmp/...` 换成当前目录，例如 `-o stdio-test.exe && ./stdio-test.exe`。
 
 编译通过不代替实板验证：首次使用需检查烧录、PC13 闪灯、断点与 Attach。
