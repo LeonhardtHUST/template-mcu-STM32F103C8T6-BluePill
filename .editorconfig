@@ -1,0 +1,40 @@
+# 供编辑器与 agent 统一风格；与 .gitattributes 的行尾策略保持一致。
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{c,h}]
+indent_style = space
+indent_size = 2
+
+[platformio.ini]
+indent_style = tab
+
+[*.{json,md,yml,yaml,ioc,mx,cfg}]
+indent_style = space
+indent_size = 2
+
+# STM32CubeMX 自己的输出：不要被编辑器改写风格
+[Core/Inc/*.h]
+end_of_line = crlf
+
+[Core/Src/main.c]
+end_of_line = crlf
+
+[Core/Src/stm32f1xx_hal_msp.c]
+end_of_line = crlf
+
+[Core/Src/stm32f1xx_it.c]
+end_of_line = crlf
+
+[*.ioc]
+end_of_line = crlf
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab

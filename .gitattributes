@@ -1,0 +1,44 @@
+# 行尾策略（Git line-ending policy）
+#
+# 背景：STM32CubeMX 在 Windows 下固定输出 CRLF，而手写源码/配置通常是 LF。
+# 本机 core.autocrlf=false，git 原样入库 —— 于是「用 LF 改一个 CRLF 文件」
+# 会显示整个文件被改动，把真实改动淹没在噪音里（agent 尤其容易踩）。
+#
+# 规则：仓库内（index）统一存 LF，工作区按类型还原。
+# 规则顺序有意义：gitattributes 中「最后匹配的规则生效」，所以具体规则放在通用规则之后。
+
+* text=auto
+
+# ---- 手写文件：工作区也用 LF ----
+*.c             text eol=lf
+*.h             text eol=lf
+*.md            text eol=lf
+*.ini           text eol=lf
+*.mx            text eol=lf
+*.cfg           text eol=lf
+*.json          text eol=lf
+*.ld            text eol=lf
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+.editorconfig   text eol=lf
+
+# ---- STM32CubeMX 拥有：工作区固定 CRLF（覆盖上面的通用规则）----
+# 这些文件会被 CubeMX 重新生成，固定 CRLF 与其输出一致，避免每次生成都改行尾。
+*.ioc                           text eol=crlf
+.mxproject                      text eol=crlf
+Core/Inc/*.h                    text eol=crlf
+Core/Src/main.c                 text eol=crlf
+Core/Src/stm32f1xx_hal_msp.c    text eol=crlf
+Core/Src/stm32f1xx_it.c         text eol=crlf
+
+# ---- 二进制：不做任何转换 ----
+*.hex   binary
+*.bin   binary
+*.elf   binary
+*.o     binary
+*.a     binary
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.zip   binary
