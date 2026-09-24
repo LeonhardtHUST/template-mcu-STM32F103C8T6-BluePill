@@ -21,15 +21,42 @@ build/
 .clang_complete
 .gcc-flags.json
 
-# STM32CubeMX 生成的库、Makefile 与备份（HAL/CMSIS/启动文件/链接脚本由 PlatformIO 提供）
+# STM32CubeMX 生成的库 / Makefile / 备份
+# HAL、CMSIS、启动文件、链接脚本由 PlatformIO framework 提供，故不提交：
 Drivers/**
 !Drivers/**/.gitkeep
 Makefile
 STM32F103XX_FLASH.ld
 startup_stm32f103xb.s
-.mxproject
 *.ioc.bak
+*.ioc.bak.*
+
+# 注意：.mxproject 是 CubeMX 的「上次生成记录」，**刻意保留在版本库中**：
+# 其内部路径为相对路径（可跨机器），且外设集合变化时会产生可审阅的 diff。
+# 不要把它加进忽略列表。
 .workbuddy/
+
+# Keil MDK / IAR 产物（将来若切到对应工具链会用到）
+Objects/
+Listings/
+*.uvguix.*
+*.uvprojx
+*.uvoptx
+*.uvopt
+*.dep
+*.crf
+*.lnp
+JLinkLog.txt
+settings/
+
+# 通用备份 / 临时文件
+*.bak
+*.orig
+*.rej
+*~
+*.tmp
 
 # OS files
 .DS_Store
+Thumbs.db
+desktop.ini
