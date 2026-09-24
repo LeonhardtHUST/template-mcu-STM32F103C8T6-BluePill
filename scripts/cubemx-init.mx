@@ -2,6 +2,6 @@ load STM32F103C8Tx
 SetStructure Advanced
 project name stm32-digital-clock
 project toolchain Makefile
-project path D:\Projects\GitHub\HUSTRadio\stm32-digital-clock
+project path __PROJECT_DIR__
 project generate
 exit
