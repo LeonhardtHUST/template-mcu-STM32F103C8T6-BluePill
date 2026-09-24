@@ -132,7 +132,28 @@ exit
 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) Cannot map signal (TIM2_CH1_ETR) on pin (PA0-WKUP)
 ```
 
-根因：**PA0 上的信号名是带 `S_` 前缀的组合枚举**，正确写法是 `S_TIM2_CH1_ETR`（不是 `TIM2_CH1_ETR`）。
+根因：**信号名必须与 CubeMX 器件数据库一致，而数据库版本会变。**
+
+直接查本机数据库就能拿到权威答案 —— 每个 `<Pin>` 节点列出了该引脚在本型号上
+可用的全部信号名：
+
+```text
+<CubeMX 安装目录>\db\mcu\STM32F103C(8-B)Tx.xml
+```
+
+本机（CubeMX **6.17.0** / `MxDb.Version=DB.6.0.170`）的实测结果：
+
+| 引脚 | 可用 TIM2 信号 |
+| ---- | -------------- |
+| `PA0-WKUP` | **`TIM2_CH1`**、`TIM2_ETR` |
+| `PA1` / `PA2` / `PA3` | `TIM2_CH2` / `TIM2_CH3` / `TIM2_CH4` |
+
+于是：`TIM2_CH1_ETR` 在任何版本都不存在；
+`S_TIM2_CH1_ETR` 是 **CubeMX 6.18** 的写法（本机 6.17 数据库里查不到，
+**不要在 6.17 上用**）；本机正确写法是 `TIM2_CH1`。
+
+> **通用结论：不要照抄任何外部文档或记忆里的信号名，一律先查本机 `db\mcu\*.xml`。**
+> 这也是为什么该工具内置了自己维护的引脚→信号对照表。
 
 由此得到两条**必须遵守**的规则：
 
@@ -144,7 +165,13 @@ exit
 
 - `config saveas` 会把 `ProjectManager.ProjectName` / `ProjectFileName` 一起改成新文件名，
   想"原地规范化"要用 `config save`，不是 `saveas`。
-- CubeMX 会弹出 GUI 对话框（迁移/提示类）—— `-q` 并非完全无人值守，**首次在新版本上运行需要有人点一下**。
+- **`-q` 不保证无人值守（实测 3 次中 2 次卡住）**：卡点固定在 CubeMX 的**更新器 / 插件扫描阶段**，
+  日志停在 `[ERROR] WebUtils:658 - Updater is busy`、`[WARN] ThirdParty:871 - waiting for
+  thirdparty lock release`，且 `~\.stm32cubemx\plugins\updater`、`plugins\power` 的时间戳
+  与停滞时刻吻合。此时进程会一直挂着不退出（一次实测停滞 >10 分钟）。
+  **对策：必须设超时并强杀进程树** —— `vscode-cube-mcp` 已内置（`ST_CUBEMX_TIMEOUT` 默认 240s，
+  超时后强杀进程树）。裸调 CLI 时请自行加超时。卡住后若日志再无新增，直接杀掉重试即可。
+- 首次在新版本上运行可能弹一次迁移/提示对话框，需要有人点一下；之后一般不再出现。
 - 想批量改 `.ioc` 建议直接用 `cubemx_configure`（带备份 + 路径白名单），比裸手改安全。
 
 ---
