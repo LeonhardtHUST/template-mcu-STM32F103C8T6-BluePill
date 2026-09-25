@@ -39,9 +39,13 @@
    Get-ChildItem "C:\" -Recurse -Depth 4 -Filter "STM32CubeMX.exe" -ErrorAction SilentlyContinue |
      Select-Object -ExpandProperty FullName
    ```
-2. **exe 的 PE 版本号会骗人**：`C:\ST\STM32CubeMX\STM32CubeMX.exe` 的 FileVersion 报
-   `6.18.1-RC2`，但真正跑起来写进 `.ioc` 的是 `MxCube.Version=6.17.0` / `MxDb.Version=DB.6.0.170`。
-   **判断版本一律看生成的 `.ioc`，不要看文件属性。**
+2. **exe 的 PE 版本号基本可信，但 `.ioc` 里的版本戳会骗人**：
+   `C:\ST\STM32CubeMX\STM32CubeMX.exe` 的 FileVersion 报 `6.18.1-RC2`，这是**真的**。
+   反过来，`.ioc` 里写着 `MxCube.Version=6.17.0` / `MxDb.Version=DB.6.0.170` **才是假的** ——
+   那是模板继承下来的旧戳，CubeMX 会**原样保留**。
+   让 CubeMX 自己 `config save`/`saveas` 一次，写回的就是真版本（`6.18.1` / `DB.6.0.181`）。
+   **判断版本：看 exe 属性，或让它自己 save 一次看写回值；不要信 `.ioc` 里的旧戳。**
+   ⚠️ 这个旧戳不只是难看 —— 它就是 `-q` 卡死的原因（版本不匹配 → 弹迁移框），见 §3.5.1。
 
 > 2026-09-24 复查：`ST_CUBEMX_EXE` 曾被写成那个不存在的 `Program Files\...` 路径，
 > 导致全局装好的 MCP **实际不可用**（只是没人去调它所以没暴露）。已修正为 `C:\ST\STM32CubeMX\STM32CubeMX.exe`。
@@ -289,13 +293,16 @@ void MX_TIM2_Init(void) {
 通道级参数（`IC1Polarity/IC1Selection/IC1Prescaler/IC1Filter`）用默认值填，**文件里的值被忽略**。
 副作用之一：IC2 参数也会被一起丢掉（`SH` 只声明了 CH1）—— 对本工程恰好是我们想要的。
 
-**对策：`÷8` 写进用户代码**，放 `/* USER CODE BEGIN TIM2_Init 2 */`（CubeMX 不会覆盖）：
+**对策：`÷8` 写进用户代码**，放 `/* USER CODE BEGIN TIM2_Init 2 */`（CubeMX 不会覆盖）。
+**本仓库已按此落地**（`Core/Src/main.c` 的 `MX_TIM2_Init` 末尾）：
 
 ```c
-TIM2->CCMR1 = (TIM2->CCMR1 & ~TIM_CCMR1_IC1PSC) | TIM_CCMR1_IC1PSC_1 | TIM_CCMR1_IC1PSC_0; /* ÷8 */
+TIM2->CCMR1 &= ~TIM_CCMR1_IC1PSC;   /* 只清 IC1PSC[1:0]（bit3:2），保留 CC1S=01 */
+TIM2->CCMR1 |= TIM_CCMR1_IC1PSC;    /* 0b11 = 每 8 个事件捕获一次 */
 ```
 
 好处：不依赖 CubeMX 的生成行为，重新 generate 也不会丢。
+时机：晚于 `HAL_TIM_IC_ConfigChannel`；`HAL_TIM_IC_Start_DMA` 运行时不会再动这两个位。
 
 ### 3.5.4 其它复测坑
 
@@ -303,6 +310,54 @@ TIM2->CCMR1 = (TIM2->CCMR1 & ~TIM_CCMR1_IC1PSC) | TIM_CCMR1_IC1PSC_1 | TIM_CCMR1
   （`…\r9\gen\freqtest\C:\Users\…\r9\gen\freqtest\Core\Src\sysmem.c`）。先生成到 `.ioc` 同目录，或先 `config save` 规范化。
 - **判断"生效"永远看生成物**。`config load` / `set` / `saveas` 可以全 `OK` 而结果全是默认值。
   要在 `.ioc` 层面判定，用 `config load` + `config saveas` 到新路径再 diff —— **能被保存下来的才是真的**。
+
+### 3.5.5 ✅ DMA 块怎么写（2026-09-25 新验证）
+
+`.ioc` 里 DMA 的键是 `Dma.<请求名>.<序号>.<参数>` —— **请求名不是 IP 名**。
+权威来源：`db\mcu\IP\DMA-STM32F103G_dma_v1_0_Modes.xml`（本芯片 DMA IP `Version="STM32F103G_dma_v1_0"`）
+里的 `<RefMode Name="TIM2_CH1">`；它嵌在 `<Mode Name="DMA1_Channel5">` 之下
+→ **TIM2_CH1 固定映射 DMA1_Channel5**（与 RM0008 一致）。
+
+```ini
+Dma.Request0=TIM2_CH1
+Dma.RequestsNb=1
+Dma.TIM2_CH1.0.Direction=DMA_PERIPH_TO_MEMORY
+Dma.TIM2_CH1.0.Instance=DMA1_Channel5
+Dma.TIM2_CH1.0.MemDataAlignment=DMA_MDATAALIGN_HALFWORD
+Dma.TIM2_CH1.0.MemInc=DMA_MINC_ENABLE
+Dma.TIM2_CH1.0.Mode=DMA_NORMAL
+Dma.TIM2_CH1.0.PeriphDataAlignment=DMA_PDATAALIGN_HALFWORD
+Dma.TIM2_CH1.0.PeriphInc=DMA_PINC_DISABLE
+Dma.TIM2_CH1.0.Priority=DMA_PRIORITY_LOW
+Dma.TIM2_CH1.0.RequestParameters=Instance,Direction,PeriphInc,MemInc,PeriphDataAlignment,MemDataAlignment,Mode,Priority
+```
+
+另需：`NVIC.*` 加一行
+`NVIC.DMA1_Channel5_IRQn=true\:0\:0\:false\:false\:true\:false\:true\:false`
+（9 段掩码，照 `SysTick_IRQn` 的形态写，CubeMX 原样保留）；
+并把 `MX_DMA_Init` 排进 `ProjectManager.functionlistsort`，**要排在用到 DMA 的外设之前**。
+无需改 `Mcu.IP*` —— CubeMX 自己会把 `DMA` 加进 `Mcu.IP0`。
+
+**生成物（逐条核对过）**
+
+| 文件 | 得到 |
+| ---- | ---- |
+| `Core/Src/main.c` | `DMA_HandleTypeDef hdma_tim2_ch1;` + `MX_DMA_Init()`（内含 `HAL_NVIC_SetPriority/EnableIRQ(DMA1_Channel5_IRQn)`） |
+| `Core/Src/stm32f1xx_hal_msp.c` | `hdma_tim2_ch1.Instance = DMA1_Channel5;`（含 7 个 `Init.*`） + `__HAL_LINKDMA(htim_ic,hdma[TIM_DMA_ID_CC1],hdma_tim2_ch1);` |
+| `Core/Src/stm32f1xx_it.c` | `DMA1_Channel5_IRQHandler()` |
+
+> ⚠️ **日志会报 8 行"假错误"**：每个参数一行
+> `IP (DMA) : Parameter (xxx) has Id (TIM2_CH1) currently not set`。
+> 这是**导入顺序噪音** —— CubeMX 按字母序先解析 `Dma.*`、后解析 `Mcu.IP*`，
+> 解析 DMA 时 TIM2 尚未建立。**生成结果完全正确，不要去"修"它。**
+> （同理忽略 `Pin10 (VP_RIF_VS_RIF1) cannot be retrieved` 与 `RCC ... has invalid value`。）
+
+**附带澄清：`CoupleFile` 决定生成物形状**
+
+`ProjectManager.CoupleFile=false`（本模板与 measure 仓库都是）→ **不生成**
+`gpio.c` / `tim.c` / `usart.c` / `dma.c`，所有 `MX_xxx_Init()` 全部落在 `Core/Src/main.c`。
+沙箱 r5 之所以有 `tim.c`，是因为它 `CoupleFile=true`。
+**别因为「没看到 `tim.c`」就以为外设没生效 —— 去看 `main.c`。**
 
 ---
 
