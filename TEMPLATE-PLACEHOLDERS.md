@@ -36,7 +36,7 @@
 | C1 | STM32CubeMX 6.x 已安装 | `Test-Path "$env:ProgramFiles\STMicroelectronics\STM32Cube\STM32CubeMX\STM32CubeMX.exe"` | 无法改 `.ioc`、无法生成 `Core/` |
 | C2 | 已安装 FW_F1 包（V1.8.7） | CubeMX → Help → Manage embedded software packages | `project generate` 失败 |
 | C3 | PlatformIO Core | `pio --version` | 无法构建/烧录 |
-| C4 | 主机 GCC（仅跑 `tests/stdio_port_test.c` 需要） | `gcc --version` | 回归测试跑不了；`pio run` 不受影响 |
+| C4 | 主机 GCC（仅跑 `test/stdio_port_test.c` 需要） | `gcc --version` | 回归测试跑不了；`pio run` 不受影响 |
 | C5 | 探针固件：野火 FireDAP Lite **仅支持 SWD** | 看探针型号 | 用 JTAG 连不上 |
 | C6 | 首次 `pio run` 需联网下载 ststm32 平台与 HAL 包 | — | 离线首次构建失败 |
 

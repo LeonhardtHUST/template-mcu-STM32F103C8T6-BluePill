@@ -103,8 +103,8 @@ feat: 加了很多功能还顺手格式化全仓库   # 不原子，混了格式
 主机回归（需要 GCC，不需要开发板；Linux/macOS 输出到 `/tmp`，Windows 换成项目内临时路径）：
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Werror Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-test && /tmp/stdio-test
-gcc -std=c11 -Wall -Wextra -Werror -DTEST_BACKEND Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-backend-test && /tmp/stdio-backend-test
+gcc -std=c11 -Wall -Wextra -Werror Core/Src/stdio_port.c test/stdio_port_test.c -o /tmp/stdio-test && /tmp/stdio-test
+gcc -std=c11 -Wall -Wextra -Werror -DTEST_BACKEND Core/Src/stdio_port.c test/stdio_port_test.c -o /tmp/stdio-backend-test && /tmp/stdio-backend-test
 pio run
 ```
 

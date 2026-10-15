@@ -126,8 +126,8 @@ agent 的工作约束（提交规范、硬约束、验证关卡）见 **[`AGENTS
 
 ```bash
 # Linux / macOS
-gcc -std=c11 -Wall -Wextra -Werror Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-test && /tmp/stdio-test
-gcc -std=c11 -Wall -Wextra -Werror -DTEST_BACKEND Core/Src/stdio_port.c tests/stdio_port_test.c -o /tmp/stdio-backend-test && /tmp/stdio-backend-test
+gcc -std=c11 -Wall -Wextra -Werror Core/Src/stdio_port.c test/stdio_port_test.c -o /tmp/stdio-test && /tmp/stdio-test
+gcc -std=c11 -Wall -Wextra -Werror -DTEST_BACKEND Core/Src/stdio_port.c test/stdio_port_test.c -o /tmp/stdio-backend-test && /tmp/stdio-backend-test
 pio run
 ```
 
