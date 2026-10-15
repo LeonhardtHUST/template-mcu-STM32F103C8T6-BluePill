@@ -3,6 +3,12 @@
   "platformio-ide.autoRebuildAutocompleteIndex": true,
   "platformio-ide.activateOnlyOnPlatformIOProject": false,
 
+  // 默认安装的 PlatformIO Core 优先于旧 PATH 中可能失效的 pio shim。
+  // 修改后新开集成终端；自定义 Core 目录时同步调整此处。
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:USERPROFILE}\\.platformio\\penv\\Scripts;${env:PATH}"
+  },
+
   // 文件树/搜索：隐藏构建产物，避免 CubeMX 库与 framework 库重复跳转
   "files.exclude": {
     "**/.pio": true
