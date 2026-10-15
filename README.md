@@ -40,6 +40,7 @@ Core/Inc                 # CubeMX 生成的用户头文件（含 stm32f1xx_hal_c
 Core/Src                 # CubeMX 生成的用户源码（PlatformIO 的 src_dir）
 Drivers/                 # CubeMX 生成的 HAL/CMSIS 库（不参与 PIO 编译，已 git 忽略）
 scripts/                 # CubeMX 命令行脚本
+test/                    # 系统 GCC 主机回归（不使用 pio test / Unity）
 .vscode/                 # 任务、调试、推荐扩展配置
 platformio.ini           # PlatformIO 工程配置
 stm32-digital-clock.ioc  # CubeMX 配置（唯一事实来源）
@@ -97,6 +98,10 @@ agent 的工作约束（提交规范、硬约束、验证关卡）见 **[`AGENTS
 ## 故障排查
 
 - **`pio` 命令不存在**：安装 PlatformIO IDE 扩展后重启 VS Code，或 `pip install platformio`。
+  Windows 集成终端通过 [settings.json](.vscode/settings.json) 的
+  `terminal.integrated.env.windows` 将默认 `penv\Scripts` 放在 PATH 开头，
+  避免旧的 pio shim 抢先匹配；修改设置后新建终端，再用 `Get-Command pio` 与 `pio --version` 核对。
+  自定义 Core 目录时同步调整此路径；只更新系统 PATH 不会更新已打开终端的环境。
 - **找不到下载器**：默认走 CMSIS-DAP（`upload_protocol = cmsis-dap`，底层调用 PlatformIO 自带的
   OpenOCD + `interface/cmsis-dap.cfg`）。用 ST-Link 就把 `platformio.ini` 里的
   `upload_protocol` / `debug_tool` 改回 `stlink`，并将 `scripts/openocd-cmsis-dap.cfg` 改用
@@ -104,13 +109,21 @@ agent 的工作约束（提交规范、硬约束、验证关卡）见 **[`AGENTS
   注意野火 **FireDAP Lite 固件仅支持 SWD，不支持 JTAG**。
 - **SWD 连接失败（`cannot read IDR` / `No ACK`）**：优先检查 SWDIO/SWCLK 是否接反、GND 是否共地、
   目标板是否独立供电；必要时降低 `debug_speed` 或改用「连接时复位」（`connect_assert_srst`）。
+  ST-Link 报 `target voltage may be too low` / `init mode failed` 时，另查目标供电与 VTref 接线，
+  以具体探针的引脚定义为准。
 - **重复定义符号**：检查是否把 `Drivers/` 加入编译，或把 `system_stm32f1xx.c` 的排除规则删除了。
 - **Flash 溢出**：PlatformIO 默认链接脚本按 64K 配置，若实际为 128K 需在 `platformio.ini` 中重新指定合适的 `board_build.ldscript`。
 
 ## 模板维护与验证
 
 - 固定 ststm32 20.0.0、CubeF1 1.8.7、GCC ARM 7.2.1 和链接脚本包 0.3.0；
-  `.ioc` 使用 CubeMX 6.17.0。升级时需同步验证生成代码与构建，避免单独升级 HAL。
+  CubeMX 实际版本以 exe 属性/运行日志为准，`.ioc` 的 6.17.0 是历史戳。
+  本机工具记录见 [CubeMX 工具说明](docs/TOOLING-cubemx.md) §1.1。
+  升级时需同步验证生成代码与构建，避免单独升级 HAL。
+- 工程源码使用 C11、`-Wall -Wextra -Werror`；严格选项不施加于 HAL/CMSIS。
+  每次链接输出 `.pio/build/genericSTM32F103C8/firmware.map`，便于检查段和符号布局。
+  newlib-nano 默认不含浮点 printf；需要 `%f` 时，在 `platformio.ini` 中取消
+  `-Wl,-u,_printf_float` 的注释并重新构建。它会增加 Flash/RAM，模板默认按需开启。
 - `board_build.stm32cube.custom_config_header = yes` 保证使用 `Core/Inc/stm32f1xx_hal_conf.h`。
 - Cortex-Debug 配置支持默认安装目录下的 Windows、Linux/macOS；WSL 使用 Linux 路径，
   探针还需能够被 WSL 访问。自定义 PlatformIO 安装目录需同步修改调试路径。
@@ -134,3 +147,7 @@ pio run
 Windows 下把输出路径 `/tmp/...` 换成当前目录，例如 `-o stdio-test.exe && ./stdio-test.exe`。
 
 编译通过不代替实板验证：首次使用需检查烧录、PC13 闪灯、断点与 Attach。
+
+HAL 状态机、UART 接收中断、共享定时器和错误路径的排查见
+[HAL-PITFALLS.md](docs/HAL-PITFALLS.md)。USB CDC 的配置观察与尚未通过的生成门槛见
+[TOOLING-cubemx.md](docs/TOOLING-cubemx.md) §3.5.6；模板没有内置 USB 中间件。
