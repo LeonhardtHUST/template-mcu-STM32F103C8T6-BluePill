@@ -151,3 +151,6 @@ Windows 下把输出路径 `/tmp/...` 换成当前目录，例如 `-o stdio-test
 HAL 状态机、UART 接收中断、共享定时器和错误路径的排查见
 [HAL-PITFALLS.md](docs/HAL-PITFALLS.md)。USB CDC 的配置观察与尚未通过的生成门槛见
 [TOOLING-cubemx.md](docs/TOOLING-cubemx.md) §3.5.6；模板没有内置 USB 中间件。
+
+本次派生工程回填的逐项取舍、提交与验证证据见
+[TEMPLATE-UPDATE-AUDIT.md](docs/TEMPLATE-UPDATE-AUDIT.md)。
