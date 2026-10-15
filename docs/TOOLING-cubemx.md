@@ -459,6 +459,11 @@ PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
 
 ## 5. 烧录 / 实板侧的 MCP（与本节主题不同，但同属一条工具链）
 
+> **2026-10-15 默认配置更新**：模板已改用 ST-Link/SWD，PlatformIO 的烧录与调试均为 `stlink`，
+> Cortex-Debug 使用 `scripts/openocd-stlink.cfg`。锁定的 OpenOCD 包中 `interface/stlink.cfg`
+> 使用原生 `st-link` 驱动，选择 `transport select swd`。
+> 下面的 CMSIS-DAP 配置与命令保留为历史实测及切回 CMSIS-DAP 时的参考，不代表当前默认配置。
+
 本机另外还装了两个**碰硬件**的 MCP server（机器级说明见
 `C:\Users\Leon\.workbuddy\mcp-servers\PROJECT-SETUP.md`）。它们**不能替代**上面的
 `vscode-cube-mcp`（一个只改配置、一个只碰硬件），分工如下：
@@ -482,10 +487,10 @@ PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
 
 | server | 本工程能否用 | 说明 |
 | ------ | ------------ | ---- |
-| `stm32-stlink`（stmcp） | ❌ **不适用** | 整个架构建立在 `ST-LINK_gdbserver` + `STM32_Programmer_CLI` 之上，两者都只认 ST-LINK。本工程用的是**野火 FireDAP Lite（CMSIS-DAP，仅 SWD）**，stmcp 根本驱动不了 |
-| `agentic-hil` | ✅ **适用** | `debuggers.<名>.type` 枚举含 `openocd` / `pyocd`，这两个后端都支持 CMSIS-DAP，是将来做**实板验证（L5）**的正路 |
+| `stm32-stlink`（stmcp） | 工具类型匹配，待实板验证 | 基于 `ST-LINK_gdbserver` + `STM32_Programmer_CLI`，与当前 ST-Link 默认探针类型匹配；早期 FireDAP Lite 下不适用的结论已过时，不能据此声称当前机器已连通 |
+| `agentic-hil` | 可配置 OpenOCD 后端，待实板验证 | ST-Link 使用 `interface/stlink.cfg`、`target/stm32f1x.cfg`；下列 CMSIS-DAP 历史示例需按实际探针调整 |
 
-`agentic-hil` 用在 CMSIS-DAP 板子上的要点（实测环境 `agentic-hil` 0.21.5）：
+`agentic-hil` 用在 CMSIS-DAP 板子上的历史要点（当时实测环境 `agentic-hil` 0.21.5）：
 
 1. **配置不在仓库里**，按工作目录哈希生成，在
    `%APPDATA%\agentic-hil\projects\<文件夹名>-<hash>\config.yaml`。

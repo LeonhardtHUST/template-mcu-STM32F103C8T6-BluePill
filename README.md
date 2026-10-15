@@ -1,6 +1,6 @@
 # template-mcu-STM32F103C8T6
 
-STM32F103C8T6 最小工程模板，默认使用 HSI 8 MHz、PC13 闪灯和 CMSIS-DAP/SWD。
+STM32F103C8T6 最小工程模板，默认使用 HSI 8 MHz、PC13 闪灯和 ST-Link/SWD。
 沿用 `stm32-digital-clock.ioc` 工程文件名；复制模板后可继续直接使用。
 
 本项目采用 **STM32CubeMX + PlatformIO + VS Code** 混合工作流：
@@ -18,10 +18,10 @@ STM32F103C8T6 最小工程模板，默认使用 HSI 8 MHz、PC13 闪灯和 CMSIS
 # 2. 编译（首次会自动下载 ststm32 平台与 HAL 包）
 pio run
 
-# 3. 烧录（CMSIS-DAP 探针接 SWD：SWDIO-PA13、SWCLK-PA14、GND 共地）
+# 3. 烧录（ST-Link 探针接 SWD：SWDIO-PA13、SWCLK-PA14、GND 共地，目标板供电）
 pio run -t upload
 
-# 4. 调试：VS Code 运行面板选择 "Debug (OpenOCD / CMSIS-DAP)"
+# 4. 调试：VS Code 运行面板选择 "Debug (OpenOCD / ST-Link)"
 ```
 
 常用命令：
@@ -89,7 +89,7 @@ docs/                    # 补充文档（如 docs/TOOLING-cubemx.md）
 | 类别 | 例子 |
 | --- | --- |
 | 必须替换 | `scripts/cubemx-init.mx` 的 `__PROJECT_DIR__`；工程名 `stm32-digital-clock`（六处要一起改） |
-| 视硬件而定 | 探针（`cmsis-dap` / `stlink`）、`board`、Flash 容量、CubeMX 安装路径 |
+| 视硬件而定 | 探针（默认 `stlink`，可切换 `cmsis-dap`）、`board`、Flash 容量、CubeMX 安装路径 |
 | 环境前提 | 已装 CubeMX + FW_F1 包、PlatformIO Core、主机 GCC（仅回归测试用） |
 | 已知陷阱 | `formatOnSave` 会重排 `main.c`；`.ioc` 的 `*IPParameters` 白名单；信号名的 `S_` 前缀 |
 
@@ -102,11 +102,12 @@ agent 的工作约束（提交规范、硬约束、验证关卡）见 **[`AGENTS
   `terminal.integrated.env.windows` 将默认 `penv\Scripts` 放在 PATH 开头，
   避免旧的 pio shim 抢先匹配；修改设置后新建终端，再用 `Get-Command pio` 与 `pio --version` 核对。
   自定义 Core 目录时同步调整此路径；只更新系统 PATH 不会更新已打开终端的环境。
-- **找不到下载器**：默认走 CMSIS-DAP（`upload_protocol = cmsis-dap`，底层调用 PlatformIO 自带的
-  OpenOCD + `interface/cmsis-dap.cfg`）。用 ST-Link 就把 `platformio.ini` 里的
-  `upload_protocol` / `debug_tool` 改回 `stlink`，并将 `scripts/openocd-cmsis-dap.cfg` 改用
-  `interface/stlink.cfg` 和 `transport select hla_swd`。
-  注意野火 **FireDAP Lite 固件仅支持 SWD，不支持 JTAG**。
+- **找不到下载器**：默认走 ST-Link（`upload_protocol = stlink`、`debug_tool = stlink`），
+  底层调用 PlatformIO 自带的 OpenOCD + `interface/stlink.cfg`。
+  Cortex-Debug 的 Debug/Attach 使用 `scripts/openocd-stlink.cfg`；锁定的 OpenOCD 包使用
+  原生 `st-link` 驱动和 `transport select swd`。
+  改用 CMSIS-DAP 时，将上述两项改为 `cmsis-dap`，并将 `.vscode/launch.json` 中两个
+  `configFiles` 切换到 `scripts/openocd-cmsis-dap.cfg`。野火 FireDAP Lite 固件仅支持 SWD。
 - **SWD 连接失败（`cannot read IDR` / `No ACK`）**：优先检查 SWDIO/SWCLK 是否接反、GND 是否共地、
   目标板是否独立供电；必要时降低 `debug_speed` 或改用「连接时复位」（`connect_assert_srst`）。
   ST-Link 报 `target voltage may be too low` / `init mode failed` 时，另查目标供电与 VTref 接线，

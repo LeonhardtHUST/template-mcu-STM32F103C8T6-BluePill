@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug (OpenOCD / CMSIS-DAP)",
+      "name": "Debug (OpenOCD / ST-Link)",
       "type": "cortex-debug",
       "request": "launch",
       "cwd": "${workspaceFolder}",
@@ -11,7 +11,7 @@
       "servertype": "openocd",
       "serverpath": "${env:HOME}/.platformio/packages/tool-openocd/bin/openocd",
       "configFiles": [
-        "${workspaceFolder}/scripts/openocd-cmsis-dap.cfg"
+        "${workspaceFolder}/scripts/openocd-stlink.cfg"
       ],
       "svdFile": "${env:HOME}/.platformio/platforms/ststm32/misc/svd/STM32F103xx.svd",
       "runToEntryPoint": "main",
@@ -33,7 +33,7 @@
       }
     },
     {
-      "name": "Attach (OpenOCD / CMSIS-DAP)",
+      "name": "Attach (OpenOCD / ST-Link)",
       "type": "cortex-debug",
       "request": "attach",
       "cwd": "${workspaceFolder}",
@@ -42,7 +42,7 @@
       "servertype": "openocd",
       "serverpath": "${env:HOME}/.platformio/packages/tool-openocd/bin/openocd",
       "configFiles": [
-        "${workspaceFolder}/scripts/openocd-cmsis-dap.cfg"
+        "${workspaceFolder}/scripts/openocd-stlink.cfg"
       ],
       "svdFile": "${env:HOME}/.platformio/platforms/ststm32/misc/svd/STM32F103xx.svd",
       "armToolchainPath": "${env:HOME}/.platformio/packages/toolchain-gccarmnoneeabi/bin",

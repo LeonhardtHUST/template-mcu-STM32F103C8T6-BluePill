@@ -20,7 +20,7 @@
 
 | # | 位置 | 当前值 | 何时需要改 |
 | - | ---- | ------ | ---------- |
-| B1 | `platformio.ini` `upload_protocol` / `debug_tool` | `cmsis-dap` | 换 ST-Link 时改为 `stlink`，并把 `scripts/openocd-cmsis-dap.cfg` 的 `interface/cmsis-dap.cfg` 改成 `interface/stlink.cfg`、`transport select hla_swd`。 |
+| B1 | `platformio.ini` `upload_protocol` / `debug_tool`；`.vscode/launch.json` 的 `configFiles` | `stlink`；`scripts/openocd-stlink.cfg`（原生 ST-Link 驱动，SWD） | 换 CMSIS-DAP 时将两项改为 `cmsis-dap`，并将 Debug/Attach 的 `configFiles` 切到已提供的 `scripts/openocd-cmsis-dap.cfg`。 |
 | B2 | `platformio.ini` `board` | `genericSTM32F103C8` | 换芯片型号时。同时 `.ioc` 的 `Mcu.CPN`、`DeviceId`、`Mcu.Name`、`Mcu.Package` 要同步。 |
 | B3 | `STM32F103C8TX_FLASH.ld` | 按 **64K** Flash 配置 | 若实际是 128K（C8T6 有 64K/128K 两种说法，以实测为准），在 `platformio.ini` 加 `board_build.ldscript` 指定合适脚本。 |
 | B4 | `.vscode/tasks.json` `windows.command` | `${env:ProgramFiles}\STMicroelectronics\...\STM32CubeMX.exe` | CubeMX **不在默认安装目录**时。默认装在 `C:\Program Files\...` 则无需改。 |
@@ -37,7 +37,7 @@
 | C2 | 已安装 FW_F1 包（V1.8.7） | CubeMX → Help → Manage embedded software packages | `project generate` 失败 |
 | C3 | PlatformIO Core | `pio --version` | 无法构建/烧录 |
 | C4 | 主机 GCC（仅跑 `test/stdio_port_test.c` 需要） | `gcc --version` | 回归测试跑不了；`pio run` 不受影响 |
-| C5 | 探针固件：野火 FireDAP Lite **仅支持 SWD** | 看探针型号 | 用 JTAG 连不上 |
+| C5 | 默认 ST-Link，使用 SWD；目标板正确供电、共地，VTref 接线按探针定义 | 看探针型号与接线；原生驱动要求 ST-LINK/V2 固件 V2J24 或更新，或 STLINK-V3 | 探针/驱动/固件不匹配或目标无电会连接失败；改用 FireDAP Lite 时也只能走 SWD |
 | C6 | 首次 `pio run` 需联网下载 ststm32 平台与 HAL 包 | — | 离线首次构建失败 |
 
 ## D. 已知陷阱（不改也会踩）
