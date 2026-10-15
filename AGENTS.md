@@ -71,12 +71,19 @@ feat: 加了很多功能还顺手格式化全仓库   # 不原子，混了格式
 5. **`Core/Src/system_stm32f1xx.c` 已从构建中排除**（`build_src_filter`），不要把它加回去，否则与 framework 的 CMSIS 重复定义符号。
 6. **不要改 `Core/Inc/stm32f1xx_hal_conf.h` 里的用户逻辑**。该文件由 CubeMX 覆盖生成；缺哪个 `HAL_XXX_MODULE_ENABLED` 就在 `.ioc` 里加对应外设再生成。
 7. **版本锁定不要单独动**。`ststm32@20.0.0` / `framework-stm32cubef1@1.8.7` / `toolchain-gccarmnoneeabi@1.70201.0` /
-   `tool-ldscripts-ststm32@0.3.0` / CubeMX `6.17.0` 是一组，升级要整组一起并重新验证生成 + 构建。
+   `tool-ldscripts-ststm32@0.3.0` 与 CubeMX 组成验证组合，升级须重新验证生成 + 构建。
+   CubeMX 的实际版本以 exe 属性/运行日志为准，并记录数据库版本；`.ioc` 的版本戳可能是历史值，
+   不代表本机安装版本。不得因迁移提示顺手升级 FW_F1/HAL；本机记录见 `docs/TOOLING-cubemx.md` §1.1。
 8. **业务逻辑与 HAL 解耦**。核心算法（可在主机上跑的部分）不要直接依赖 HAL 头文件，方便用主机 GCC 做回归测试。
 9. **Git 入库、checkout 与编辑器统一 LF**（`.gitattributes` 的 `* text=auto eol=lf`，`.editorconfig` 一致）。
    CubeMX 仍可能将生成文件写成 CRLF；`text` 属性在 `add`/`status`/`diff` 时归一化，
    不会仅因行尾产生整文件 diff。不要为 CubeMX 目录恢复 `eol=crlf` 或维护手写文件例外清单。
    不要提交"整文件行尾变化"的 diff；异常时先核对属性和 index 中的实际字节。
+10. **自有目录用小写**（如 `docs/`、`scripts/`、`test/`、`release/`）。
+    CubeMX 管理的 `Core/`、`Drivers/`、`Middlewares/`、`USB_DEVICE/` 保持工具命名与位置，
+    不要为了统一风格改名或移动，否则下次生成可能重建目录或破坏路径引用。
+11. **避免保存时重排生成文件**。编辑 `Core/**` 前关闭 formatOnSave，或用适当的格式化保护，
+    只保留与本次任务相关的 diff；具体陷阱见 `TEMPLATE-PLACEHOLDERS.md` D1。
 
 ---
 
@@ -102,6 +109,9 @@ pio run
 ```
 
 **构建通过不等于能用。** 影响运行时的改动必须实板确认（L5），并在结论里区分"编译通过"与"实板验证过"。
+
+提交正文必须包含实际执行的验证命令与结果；做过构建则记录 PlatformIO 报告的 Flash/RAM 字节数，
+做过主机回归则记录通过情况。纯文档/配置只做 L1 时明确写明未运行构建，不复用旧构建数字作为本次证据。
 
 ---
 

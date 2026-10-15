@@ -25,9 +25,9 @@
 | B3 | `STM32F103C8TX_FLASH.ld` | 按 **64K** Flash 配置 | 若实际是 128K（C8T6 有 64K/128K 两种说法，以实测为准），在 `platformio.ini` 加 `board_build.ldscript` 指定合适脚本。 |
 | B4 | `.vscode/tasks.json` `windows.command` | `${env:ProgramFiles}\STMicroelectronics\...\STM32CubeMX.exe` | CubeMX **不在默认安装目录**时。默认装在 `C:\Program Files\...` 则无需改。 |
 | B5 | `.vscode/tasks.json` `linux.command` | `STM32CubeMX` | Linux 下要求该命令在 `PATH` 中。 |
-| B6 | `.vscode/launch.json` | `${env:USERPROFILE}/.platformio/...` | PlatformIO 包目录被 `PLATFORMIO_CORE_DIR` 改到别处时（WSL 也要留意）。 |
+| B6 | `.vscode/launch.json`、`.vscode/settings.json` 的终端 PATH | `${env:USERPROFILE}/.platformio/...` | PlatformIO Core/包目录被 `PLATFORMIO_CORE_DIR` 改到别处时，同步调整调试路径和 `penv/Scripts` 路径（WSL 也要留意）。 |
 | B7 | `platformio.ini` 的版本锁定 | `ststm32@20.0.0`、`framework-stm32cubef1@1.8.7`、`toolchain-gccarmnoneeabi@1.70201.0`、`tool-ldscripts-ststm32@0.3.0` | 升级时**必须一起验证**"生成代码 + 构建"两者，不要单独升 HAL。 |
-| B8 | `.ioc` 与 CubeMX 版本 | `MxCube.Version=6.17.0`、`MxDb.Version=DB.6.0.170`、`FirmwarePackage=STM32Cube FW_F1 V1.8.7` | 本机 CubeMX 版本不同时，打开 `.ioc` 会提示迁移；迁移后请把这三行一起提交。 |
+| B8 | `.ioc` 与 CubeMX 版本 | 历史戳 `MxCube.Version=6.17.0`、`MxDb.Version=DB.6.0.170`；FW_F1 锁定 V1.8.7 | 实际工具版本看 exe/运行日志（本机记录为 6.18.1-RC2，见 tooling §1.1），不要仅相信旧戳。迁移后审阅工具写回并验证生成 + 构建，保留 FW_F1 版本锁，不必同时升级固件包。 |
 
 ## C. 环境前提（不是文件，但缺了就跑不起来）
 
