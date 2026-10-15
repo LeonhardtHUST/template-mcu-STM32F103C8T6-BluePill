@@ -19,21 +19,8 @@ indent_style = tab
 indent_style = space
 indent_size = 2
 
-# STM32CubeMX 自己的输出：不要被编辑器改写风格
-[Core/Inc/*.h]
-end_of_line = crlf
-
-[Core/Src/main.c]
-end_of_line = crlf
-
-[Core/Src/stm32f1xx_hal_msp.c]
-end_of_line = crlf
-
-[Core/Src/stm32f1xx_it.c]
-end_of_line = crlf
-
+# CubeMX 写回的 CRLF 由 Git 归一化；保留 .ioc 的尾随空格，避免内容 diff。
 [*.ioc]
-end_of_line = crlf
 trim_trailing_whitespace = false
 
 [Makefile]

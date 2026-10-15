@@ -45,7 +45,7 @@
 | # | 陷阱 | 现状 | 建议 |
 | - | ---- | ---- | ---- |
 | D1 | `.vscode/settings.json` 开了 `editor.formatOnSave: true` | 保存 `Core/Src/main.c` 会被 clang-format 整体重排，产生与 CubeMX 无关的巨大 diff | 处理 `Core/**` 时建议关掉 formatOnSave，或加 `.clang-format` + `// clang-format off` 保护 |
-| D2 | `.ioc` 行尾 | CubeMX 固定写 **CRLF**；`.gitattributes` 已把该类文件固定为 `eol=crlf` | 不要用「把整个文件转 LF」的方式改 `.ioc`，会产生整文件 diff |
+| D2 | `.ioc` 行尾 | CubeMX 写 **CRLF**；Git 入库/checkout 与编辑器统一 LF，`text` 属性在 add/比对时归一化 | 不必手工转回 CRLF；不要提交纯行尾变化，异常时用 `git ls-files --eol` 核对 |
 | D3 | `.ioc` 内的 `*IPParameters` 白名单 | 每个外设有一行 `<IP>.IPParameters=a,b,c`，只有列在这里的 key 才被识别 | 手改 `.ioc` 加参数时，**必须同步补进该行**，否则 CubeMX 静默忽略 |
 | D4 | 信号名是 `S_` 前缀的枚举 | 例如 PA0 上 TIM2 通道 1 的**正确**写法是 `S_TIM2_CH1_ETR`，写成 `TIM2_CH1_ETR` 会失败 | 见 D5 的校验流程 |
 | D5 | CubeMX 对 `.ioc` 的错误是**非致命**的 | 信号名写错时只在日志里留一行 `(OptionalMessage_ERROR) Cannot map signal ...`，`project generate` 依然返回成功，外设被静默丢弃 | 改过 `.ioc` 后**必须**核验：①日志有无 `Cannot map`；②生成的 `main.c` 里有没有对应的 `MX_xxx_Init` |

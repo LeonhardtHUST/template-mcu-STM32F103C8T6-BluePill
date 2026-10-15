@@ -73,8 +73,10 @@ feat: 加了很多功能还顺手格式化全仓库   # 不原子，混了格式
 7. **版本锁定不要单独动**。`ststm32@20.0.0` / `framework-stm32cubef1@1.8.7` / `toolchain-gccarmnoneeabi@1.70201.0` /
    `tool-ldscripts-ststm32@0.3.0` / CubeMX `6.17.0` 是一组，升级要整组一起并重新验证生成 + 构建。
 8. **业务逻辑与 HAL 解耦**。核心算法（可在主机上跑的部分）不要直接依赖 HAL 头文件，方便用主机 GCC 做回归测试。
-9. **行尾按 `.gitattributes`**：`Core/Inc/*.h`、`Core/Src/main.c`、`Core/Src/stm32f1xx_hal_msp.c`、`Core/Src/stm32f1xx_it.c`、`*.ioc` 工作区固定 CRLF，其余 LF。
-   不要提交"整文件行尾变化"的 diff。
+9. **Git 入库、checkout 与编辑器统一 LF**（`.gitattributes` 的 `* text=auto eol=lf`，`.editorconfig` 一致）。
+   CubeMX 仍可能将生成文件写成 CRLF；`text` 属性在 `add`/`status`/`diff` 时归一化，
+   不会仅因行尾产生整文件 diff。不要为 CubeMX 目录恢复 `eol=crlf` 或维护手写文件例外清单。
+   不要提交"整文件行尾变化"的 diff；异常时先核对属性和 index 中的实际字节。
 
 ---
 
