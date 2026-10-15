@@ -276,12 +276,12 @@ void MX_TIM2_Init(void) {
 ```
 
 `Prescaler n` / `Period n` 会以 **`n-1` 字面量**写进 `.ioc`（`Prescaler 1` → `1-1`）
-—— 所以**传的是寄存器值**：要 PSC=0/ARR=65535 就传 `Prescaler 1 Period 65536`。
+—— 所以**传的是分频数/计数长度，不是最终寄存器值**：要 PSC=0/ARR=65535 就传 `Prescaler 1 Period 65536`。
 这也说明 `Period=65536-1` 是 CubeMX 认可的**原生形态**（它自己 `saveas` 也原样保留）。
 
 ### 3.5.3 ⛔ TIM 通道参数改不动（CubeMX 6.18.1 的真实限制）
 
-想让 `IC1PSC = ÷8`（本题要求：每 8 个上升沿捕获一次），三种办法**全部失败**，生成代码恒为 `TIM_ICPSC_DIV1`：
+想让 `IC1PSC = ÷8`（该次 TIM2 实验要求每 8 个上升沿捕获一次），三种办法**全部失败**，生成代码恒为 `TIM_ICPSC_DIV1`：
 
 | 办法 | 结果 |
 | ---- | ---- |
@@ -294,7 +294,7 @@ void MX_TIM2_Init(void) {
 副作用之一：IC2 参数也会被一起丢掉（`SH` 只声明了 CH1）—— 对本工程恰好是我们想要的。
 
 **对策：`÷8` 写进用户代码**，放 `/* USER CODE BEGIN TIM2_Init 2 */`（CubeMX 不会覆盖）。
-**本仓库已按此落地**（`Core/Src/main.c` 的 `MX_TIM2_Init` 末尾）：
+**该实验工程的补充代码如下**；模板默认未启用 TIM2，`Core/Src/main.c` 中没有此补丁：
 
 ```c
 TIM2->CCMR1 &= ~TIM_CCMR1_IC1PSC;   /* 只清 IC1PSC[1:0]（bit3:2），保留 CC1S=01 */
@@ -358,6 +358,89 @@ Dma.TIM2_CH1.0.RequestParameters=Instance,Direction,PeriphInc,MemInc,PeriphDataA
 `gpio.c` / `tim.c` / `usart.c` / `dma.c`，所有 `MX_xxx_Init()` 全部落在 `Core/Src/main.c`。
 沙箱 r5 之所以有 `tim.c`，是因为它 `CoupleFile=true`。
 **别因为「没看到 `tim.c`」就以为外设没生效 —— 去看 `main.c`。**
+
+### 3.5.6 USB Device (CDC)：配置核对与 2026-10-15 生成实验
+
+这是派生工程报告的审核补充，**不是完整通过 L4/L5 的即用配方**。
+模板仍保持 HSI 8 MHz 与 PC13；USB 只在 `.pio/template-audit/` 隔离副本中实验，
+没有把 USB_DEVICE/Middlewares 或时钟更改写入模板配置。
+
+前提是已配置有效的 USB 48 MHz 时钟。F103C8 可使用 HSE 8 MHz ×9 得到 PLL 72 MHz，
+USB 再除以 1.5；也支持 PLL 48 MHz 直供，不能笼统说“F103 的 USB 固定除以 1.5”。
+应先用 GUI 配置时钟，或完整核对 RCC 参数与 HSE 引脚。
+
+USB 配置的主要键如下。`Mcu.IP*`/`Mcu.Pin*` 序号、总数应在现有清单上追加并重算，
+不要照抄其他工程的数字；下段不包含这些动态序号。
+
+```ini
+NVIC.USB_LP_CAN1_RX0_IRQn=true\:0\:0\:false\:false\:true\:false\:true\:false
+PA11.Mode=Device
+PA11.Signal=USB_DM
+PA12.Mode=Device
+PA12.Signal=USB_DP
+USB.DeviceSpeed=PCD_SPEED_FULL
+USB.IPParameters=DeviceSpeed,low_power_enable,lpm_enable,battery_charging_enable
+USB.battery_charging_enable=DISABLE
+USB.low_power_enable=DISABLE
+USB.lpm_enable=DISABLE
+USB_DEVICE.CLASS_NAME_FS=CDC
+USB_DEVICE.IPParameters=VirtualMode,VirtualModeFS,CLASS_NAME_FS
+USB_DEVICE.VirtualMode=Cdc
+USB_DEVICE.VirtualModeFS=Cdc_FS
+VP_USB_DEVICE_VS_USB_DEVICE_CDC_FS.Mode=CDC_FS
+VP_USB_DEVICE_VS_USB_DEVICE_CDC_FS.Signal=USB_DEVICE_VS_USB_DEVICE_CDC_FS
+```
+
+同时核对以下清单：
+
+- `Mcu.IP*` 登记 `USB` 和 `USB_DEVICE`，并更新 `Mcu.IPNb`。
+- `Mcu.Pin*` 登记 PA11、PA12 和 `VP_USB_DEVICE_VS_USB_DEVICE_CDC_FS`，并更新 `Mcu.PinsNb`。
+- `ProjectManager.functionlistsort` 追加序号唯一的
+  `<序号>-MX_USB_DEVICE_Init-USB_DEVICE-false-HAL-false`。
+- 在 PLL 为 72 MHz 的前提下，设置下面两项，并将 `USBPrescaler`、`USBFreq_Value`
+  都加入已有 `RCC.IPParameters`；保留其他有效时钟参数。
+
+```ini
+RCC.USBPrescaler=RCC_USBCLKSOURCE_PLL_DIV1_5
+RCC.USBFreq_Value=48000000
+```
+
+**审核纠正**：仅写 `USBFreq_Value=48000000` 是不够的；它是派生频率，不能代替分频选择。
+隔离对照中，遗漏 `USBPrescaler` 时生成了 `RCC_USBCLKSOURCE_PLL`，日志出现
+`IP not ready for code generation: Clock`，但进程仍返回 0 且产出了 CDC 文件。
+不能断言出现此日志就“一定中止、不生成文件”。显式补充分频参数后生成的是：
+
+```c
+PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
+```
+
+因此未采纳报告中无条件在 SysInit 写 `CLEAR_BIT(RCC->CFGR, RCC_CFGR_USBPRE)` 的补丁。
+应优先修正 `.ioc`，复核生成的 `UsbClockSelection` 和实际 USB 时钟；
+不要把派生工程的整个 `RCC_CFGR=0x001d040a` 当作通用验收值。
+当前 HAL 中 `RCC_USBCLKSOURCE_PLL` 表示 PLL 直供，`PLL_DIV1_5` 表示除以 1.5。
+
+生成物应逐一核对：
+
+| 位置 | 应有内容 |
+| --- | --- |
+| `USB_DEVICE/App/usb_device.c`、`.h` | `MX_USB_DEVICE_Init()` 定义与声明 |
+| `USB_DEVICE/App/usbd_desc.*`、`usbd_cdc_if.*` | 描述符与 CDC 接口 |
+| `USB_DEVICE/Target/usbd_conf.*` | HAL_PCD 桥接、`USBD_LL_*` 与 USB NVIC |
+| `Middlewares/ST/STM32_USB_Device_Library/` | USB Device 核心与 CDC 类库 |
+| `Core/Src/main.c` | `MX_USB_DEVICE_Init()` 调用及正确 USB 分频 |
+| `Core/Inc/stm32f1xx_hal_conf.h`、`Core/Src/stm32f1xx_it.c` | PCD 模块启用、USB IRQ handler |
+
+只启用裸 `USB` 外设并不等于启用 CDC 中间件。纳入构建时还要增加源文件白名单与包含路径、
+排除库内 `*_template.c`，避免重复定义。当前模板 `src_dir = Core/Src` 不会编译这些目录，
+所以不能只生成文件就声称固件支持 CDC。对第三方中间件告警应单独评估，不能一律放宽工程告警。
+
+**本次验证边界**：CubeMX exe 为 6.18.1-RC2，数据库写回为 DB.6.0.181，固件包 V1.8.7。
+清理无效的历史 RCC 缓存参数后，正确分频及上述 CDC 生成物均存在，
+没有 `Cannot map` 或 `IP not ready`；仍有一条
+`(OptionalMessage_ERROR) Pin11 (VP_RIF_VS_RIF1) cannot be retrieved for this MCU`。
+该诊断的来源尚未定位，**不满足 AGENTS.md 要求的无 OptionalMessage_ERROR 的完整 L4 门槛**。
+历史 §3.5.5 中将某些告警称为噪音，不等于免除这条门槛。
+本文配置核对为 L1，隔离生成仅提供观察证据；未构建或烧录 USB 变体，未做枚举/收发 L5。
 
 ---
 
