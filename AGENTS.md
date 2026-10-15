@@ -6,6 +6,7 @@
 - 仓库定位：STM32F103C8T6 **最小工程模板**，工作流 = STM32CubeMX + PlatformIO + VS Code。
 - 先读 [`TEMPLATE-PLACEHOLDERS.md`](TEMPLATE-PLACEHOLDERS.md)：那里列了复制模板后**必须人工改**的占位符与已知陷阱。
 - 工具链能力（含已全局安装的 CubeMX MCP）：见 [`docs/TOOLING-cubemx.md`](docs/TOOLING-cubemx.md)。
+- HAL 状态机与生成代码排查边界：见 [`docs/HAL-PITFALLS.md`](docs/HAL-PITFALLS.md)，按锁定包源码核对，不照搬派生工程补丁。
 
 ---
 
