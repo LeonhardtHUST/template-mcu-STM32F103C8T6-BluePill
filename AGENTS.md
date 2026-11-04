@@ -80,11 +80,28 @@ feat: 加了很多功能还顺手格式化全仓库   # 不原子，混了格式
    CubeMX 仍可能将生成文件写成 CRLF；`text` 属性在 `add`/`status`/`diff` 时归一化，
    不会仅因行尾产生整文件 diff。不要为 CubeMX 目录恢复 `eol=crlf` 或维护手写文件例外清单。
    不要提交"整文件行尾变化"的 diff；异常时先核对属性和 index 中的实际字节。
-10. **自有目录用小写**（如 `docs/`、`scripts/`、`test/`、`release/`）。
+10. **自有目录用小写**（如 `docs/`、`docs/bluepill/`、`scripts/`、`test/`、`examples/`、`release/`）。
+    `docs/bluepill/` 是板卡资料的单一权威入口，派生到别的板卡时也保持小写、语义直指板卡。
     CubeMX 管理的 `Core/`、`Drivers/`、`Middlewares/`、`USB_DEVICE/` 保持工具命名与位置，
     不要为了统一风格改名或移动，否则下次生成可能重建目录或破坏路径引用。
 11. **避免保存时重排生成文件**。编辑 `Core/**` 前关闭 formatOnSave，或用适当的格式化保护，
     只保留与本次任务相关的 diff；具体陷阱见 `TEMPLATE-PLACEHOLDERS.md` D1。
+
+<!-- BEGIN: BP_THIRD_PARTY_ORIGINAL_RULE -->
+12. **第三方原件一律不入库**（本模板日后会公开，此约束默认生效）。
+    「第三方原件」指**版权不属于本仓库、由外部创作并发布的文件本体**：ST 官方 PDF（datasheet /
+    参考手册 / 应用笔记 / MB1136 原理图）、社区原理图、整包例程、`Drivers/` 副本、第三方引脚图 /
+    照片等。**不含**自研 Markdown、自绘 SVG、自写源码、单纯的 URL 直链，以及"不复制原文图表"
+    的自研摘要。资料目录（[`docs/bluepill/`](docs/bluepill/README.md)）只放**官方直链索引 +
+    三级来源标注 + 少量自有整理**，字段与许可判断以 [`SOURCES.md`](docs/bluepill/SOURCES.md)
+    为唯一台账：S1/S2 条目默认 `store = link`，`license = 未验证` 时禁止 `store = file`。
+    **两个显式例外**（须逐条登记许可与出处，不得扩大）：#9 PlatformIO `genericSTM32F103C8.json`
+    （Apache-2.0，1,150 B，仅作 `docs/bluepill/` 资料副本，绝不进 `boards/`）、
+    #7 社区 Blue Pill 原理图（按用户拍板条件入库，必须附 [`ATTRIBUTION.md`](docs/bluepill/ATTRIBUTION.md)，
+    且仅解决署名可追溯、不构成 ST 要求的 `prior written permission`）。
+    派生工程若需改变此约束，由 `scripts/init-project.sh|ps1` 按初始化问答**patch 本注释标记块**
+    实现，不要手改标记之外的内容。
+<!-- END: BP_THIRD_PARTY_ORIGINAL_RULE -->
 
 ---
 
