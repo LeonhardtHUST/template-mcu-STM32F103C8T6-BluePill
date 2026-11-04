@@ -44,6 +44,39 @@
       "type": "PlatformIO",
       "task": "Clean",
       "problemMatcher": []
+    },
+    {
+      // 只做改名预演，不写任何文件；正式初始化请在终端跑脚本并去掉 --dry-run
+      "label": "Project: Init 新工程名 (dry-run 预览)",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-ExecutionPolicy", "Bypass",
+          "-File", "${workspaceFolder}\\scripts\\init-project.ps1",
+          "${input:newProjectName}",
+          "-DryRun"
+        ]
+      },
+      "linux": {
+        "command": "bash",
+        "args": [
+          "${workspaceFolder}/scripts/init-project.sh",
+          "${input:newProjectName}",
+          "--dry-run"
+        ]
+      },
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always" },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "newProjectName",
+      "type": "promptString",
+      "description": "新工程名（仅用于 dry-run 预览，不写文件）",
+      "default": "my-board"
     }
   ]
 }

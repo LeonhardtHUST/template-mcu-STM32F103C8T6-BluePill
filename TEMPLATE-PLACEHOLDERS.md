@@ -13,8 +13,8 @@
 | - | ---- | -------------- | ------ | ---- |
 | A1 | `scripts/cubemx-init.mx:5` | `project path __PROJECT_DIR__` | 本副本的**绝对路径**，如 `D:\Projects\foo\my-board` | 该脚本用于"从 MCU 裸建工程"，CubeMX 脚本**不支持变量**，必须硬写绝对路径。仅用 `scripts/cubemx-generate.mx` 的话可以不碰它。 |
 | A2 | `stm32-digital-clock.ioc` | 工程名 `stm32-digital-clock` | 你的工程名 | 工程名同时出现在：`ProjectManager.ProjectName`、`ProjectManager.ProjectFileName`、文件名本身、`.vscode/tasks.json`、`scripts/cubemx-generate.mx`、`README.md`。**六处要一起改**，否则 CubeMX 会按新名字再生成一套目录。 |
-| A3 | 仓库自身 | 仓库名 `template-mcu-STM32F103C8T6` | 你的仓库名 | `git remote -v` 指向模板仓库时，提交会推到模板去。新建仓库后确认 remote。 |
-| A4 | `README.md:1` | `# template-mcu-STM32F103C8T6` | 你的项目名 | 纯展示，但会误导协作者。 |
+| A3 | 仓库自身 | 仓库名 `template-mcu-STM32F103C8T6-BluePill` | 你的仓库名 | `git remote -v` 指向模板仓库时，提交会推到模板去。新建仓库后确认 remote。 |
+| A4 | `README.md:1` | `# template-mcu-STM32F103C8T6-BluePill` | 你的项目名 | 纯展示，但会误导协作者。 |
 
 ## B. 视硬件/工具链而定（可能不用改）
 
@@ -67,3 +67,63 @@ CubeMX 的 `-q` 脚本模式确实能接受手写的时钟/外设/GPIO 参数（
 4. **有 MCP 就用 MCP**：`vscode-cube-mcp`（见 `docs/TOOLING-cubemx.md`）提供
    `cubemx_load`（只读回读）/ `cubemx_configure`（带备份写回）/ `cubemx_generate`，
    并强制 `.ioc` 路径白名单 —— 比裸手改安全。
+
+## F. 初始化脚本（`scripts/init-project.sh|ps1`）能做什么、不能做什么
+
+复制模板后可以用脚本把「六处联动」一次改完，但**它不是全自动**。用法：
+
+```bash
+bash scripts/init-project.sh <新工程名> [--yes] [--dry-run] [--flash 64k|128k]
+# Windows PowerShell：
+#   powershell -ExecutionPolicy Bypass -File .\scripts\init-project.ps1 <新工程名> [--Yes] [--DryRun] [--Flash 64k|128k]
+```
+
+| 项 | 说明 |
+| -- | ---- |
+| 自动改（A2 六处联动） | ① 根 `.ioc` 文件名 ② `.ioc` 内 `ProjectManager.ProjectName` ③ `ProjectManager.ProjectFileName` ④ `.vscode/tasks.json` 里引用的 `.ioc` 名 ⑤ `scripts/cubemx-generate.mx` 里 `config load` 的 `.ioc` 名 ⑥ `README.md` 里提到的工程名 / `.ioc` 名；另自动改 A3 仓库名、A4 README 标题 |
+| 自动改（Q5 询问） | 用平实大白话问「**新建的工程要把资料原件放进仓库吗？**」，默认**允许**、可手动改；按回答 patch `AGENTS.md` 里 `<!-- BEGIN: BP_THIRD_PARTY_ORIGINAL_RULE -->` / `<!-- END: BP_THIRD_PARTY_ORIGINAL_RULE -->` 标记块（允许 → 移除该约束；不允许 → 写入该约束）。提问文案不含任何生僻术语 |
+| `--dry-run` | **不写任何文件**，只打印将做什么（含将 patch 的 `AGENTS.md` 内容）；可用来先审阅再真跑 |
+| `--yes` | 跳过逐项确认，用默认值（工程名必填、资料原件默认允许、flash 默认 64k） |
+| **仍需人工项**（脚本会明确打印，且不自动填绝对路径） | ① `scripts/cubemx-init.mx` 的 `__PROJECT_DIR__`（CubeMX `.mx` 脚本不支持变量，必须硬写本副本绝对路径）② 目录名 / 仓库文件夹名 ③ `git remote -v` 指向的远端地址 ④ clangd 重新生成索引（换机器后重跑 `scripts/init-clangd.sh|ps1`） |
+| **不会改** | `.ioc` 的引脚 / 时钟 / 外设配置、`platformio.ini` 的锁定组合、`Core/Src/**`、`Core/Inc/stm32f1xx_hal_conf.h`、`.git/config`（含 `core.hooksPath`）、用户既有的 `.vscode` 未提交改动 |
+
+## G. `--flash` 选项与 64K / 128K Flash（Q7）
+
+- 默认 **`--flash 64k`**：与 PlatformIO 内置 `genericSTM32F103C8.json`、现有
+  `STM32F103C8TX_FLASH.ld`、上文 **B3** 一致，脚本**不改 `platformio.ini`**。
+- 选 **`--flash 128k`** 时：脚本只**打印提醒**——C8T6 有 64K / 128K 两种说法，以实测为准；
+  若确需按 128K 使用，须人工在 `platformio.ini` 里同步设置
+  `board_build.ldscript` 指向合适的链接脚本（脚本不代改，避免动到版本锁定组合）。
+- 不引入自定义 `boards/` 目录；`docs/bluepill/genericSTM32F103C8.json` 只是**资料副本**，
+  绝不放到 `boards/`。
+
+## H. 派生到别的板卡时：`SOURCES.md` 哪些字段要重填
+
+[`docs/bluepill/SOURCES.md`](docs/bluepill/SOURCES.md) 是「一行一条」的宽表。换板卡时
+**不要沿用旧行的来源结论**，逐条按新板卡重填下列字段（其余字段也要相应核对）：
+
+| 字段 | 为什么要重填 |
+| ---- | ------------ |
+| `id` / `title` | 沿用 2.7 的编号规则增补 / 校正，不重编号；标题换成新板卡资料名 |
+| `tier` / `official_level` | S1「厂商官方·芯片级」与 S2「社区权威·板级」不得混标；换芯片 / 换板后权威来源可能整体变化 |
+| `belongs_to` | **防误标核心**：`STM32F103x8/B 芯片` / `Blue Pill 板卡` / `NUCLEO-F103RB 板卡` / `本仓库自有`。例如 MB1136 必须写 `NUCLEO-F103RB 板卡`，绝不能写成新板卡 |
+| `doc_no` | 文档编号 / 版本按新芯片重填；按 Q14 只记编号 + 官方动态链接，不锁具体 Rev |
+| `covers` / `publisher` | 覆盖的资料类型、发布方随板卡变化 |
+| `url` | 换成新板卡的官方 / 社区直链；**失效项不得作为可入库直链**，须给 `fallback` |
+| `license` / `redistribution` | 换资料就要重新判断许可；「标未验证」时禁止 `store = file` |
+| `store` / `local_path` | 默认 `link`；只有 S3 自有与显式例外可 `file`，`local_path` 必须在小写资料目录内 |
+| `size_bytes` / `verified` / `verified_on` / `access_evidence` | **实测字节数、HTTP 状态 / 页面标题 / 下载字节数、核验日期**必须重新实测；`store = link` 填 `0`，不得把「估计·未实测」写成已实测 |
+| `attribution` / `notes` | 条件入库的署名指向、易误导点（如「非本板卡原理图」）随板卡变化 |
+| 末尾汇总行 | 总条数 / 按 tier 分组 / link-only 条数 / 实际入库文件数 / 合计体积 / 最近核验日期全部重算 |
+
+同时：`docs/bluepill/README.md`（主索引）、`board-pinout.md`（40-pin 速查与硬件坑）、
+`examples.md`（例程索引）、`ATTRIBUTION.md`（若条件入库了原理图）都要按新板卡重写；
+`Core/Inc/bluepill.h` 的 `BP_` 宏要以**本工程 `.ioc` 与新板卡资料**为依据，不得照抄别的板。
+
+## I. 板级映射头与提交校验（新增文件说明）
+
+| 文件 | 人工维护？ | 说明 |
+| ---- | ---------- | ---- |
+| `Core/Inc/bluepill.h` | 是，人工维护 | `BP_` 前缀，只描述「信号 → 引脚」；模式 / AF / 上下拉 / 时钟一律由 `.ioc` 决定。CubeMX 既不生成也不覆盖；include 放在 `main.h` 的 `/* USER CODE BEGIN Includes */` 内，重新生成后保留 |
+| `commitlint.config.mjs` + `package.json` + `.vite-hooks/commit-msg` | 否 | Node 工具链**仅用于提交信息校验**（devDependencies），不进固件、不参与 `pio run`、不污染跨平台；启用命令见根级 README，**不提供任何跳过钩子的方式** |
+| `scripts/init-clangd.sh|ps1` / `disable-clangd.sh|ps1` | 否 | 生成 / 移除 clangd 编译数据库与 `.clangd`（均已被 `.gitignore` 忽略）；**换机器要重跑** |
