@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+# 提交信息校验（中文 Conventional Commits，见 AGENTS.md §1）。
+#
+# 启用（由使用者自己在仓库根目录执行，本仓库不代执行、不改 .git/config）：
+#   git config core.hooksPath .vite-hooks
+#
+# $1 是本次提交信息所在的临时文件路径。
+# 本钩子**不提供任何跳过方式**：失败时请修改提交信息，不要用 --no-verify /
+# 环境变量开关绕过（AGENTS.md §1.5 明确禁止）。
+# 只调用仓库本地安装的 commitlint，不依赖任何全局命令或转发器。
+
+set -eu
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_ROOT"
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "[commit-msg] 找不到 pnpm，请先安装 pnpm 并在仓库根目录执行：pnpm install" >&2
+  exit 1
+fi
+
+if [ ! -x "$REPO_ROOT/node_modules/.bin/commitlint" ]; then
+  echo "[commit-msg] 未找到本地 commitlint，请在仓库根目录执行：pnpm install" >&2
+  exit 1
+fi
+
+# 使用本地 commitlint + 本仓库 commitlint.config.mjs；不提供跳过开关。
+pnpm exec commitlint --edit "$1"

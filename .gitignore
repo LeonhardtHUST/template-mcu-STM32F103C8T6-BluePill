@@ -21,6 +21,20 @@ build/
 .clang_complete
 .gcc-flags.json
 
+# clangd / 编译数据库产物（scripts/init-clangd.sh|ps1 生成，换机器重跑）。
+# 均为本机生成物，不入库、不进固件；.vscode/settings.json 策略不变（Q8 不改）。
+compile_commands.json
+.clangd
+.cache/
+
+# 提交信息校验的 Node 依赖（仅 devDependencies，不参与固件编译，见 AGENTS.md §0.5 / README）。
+# 未安装 node_modules 时 pio run 仍须通过（0.5 追加闸门）。
+node_modules/
+pnpm-debug.log*
+
+# .vite-hooks/commit-msg 是手写源文件、需要入库；只忽略下划线目录（生成转发器）。
+.vite-hooks/_/
+
 # STM32CubeMX 生成的库 / Makefile / 备份
 # HAL、CMSIS、启动文件、链接脚本由 PlatformIO framework 提供，故不提交：
 Drivers/**

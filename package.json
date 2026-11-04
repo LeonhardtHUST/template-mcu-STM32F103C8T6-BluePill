@@ -1,0 +1,10 @@
+{
+  "name": "template-mcu-stm32f103c8t6-bluepill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "STM32F103C8T6 Blue Pill 最小工程模板：Node 依赖仅用于提交信息校验，不参与固件构建",
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4"
+  }
+}
