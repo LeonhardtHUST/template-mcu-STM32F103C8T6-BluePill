@@ -70,6 +70,10 @@ settings/
 *~
 *.tmp
 
+# 本机临时工作目录（如 .tmp-qa-final/、.tmp-l4-exp/ 之类）。上面 *.tmp 匹配不到它们，
+# 曾导致 QA 的临时目录一次贡献 195 个未跟踪条目，误 `git add -A` 会污染提交。
+/.tmp-*/
+
 # OS files
 .DS_Store
 Thumbs.db
