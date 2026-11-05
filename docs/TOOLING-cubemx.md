@@ -195,7 +195,9 @@ exit
 由此得到两条**必须遵守**的规则：
 
 1. `.ioc` 里每个外设有一行 `<IP>.IPParameters=a,b,c` 白名单 —— **手加的参数必须同步补进这一行**，否则被忽略。
-2. 任何 `.ioc` 改动后**必须核验**：①日志里没有 `Cannot map` / `OptionalMessage_ERROR`；
+2. 任何 `.ioc` 改动后**必须核验**：①日志里 `Cannot map signal` 为 **0**，`OptionalMessage_ERROR`
+   只允许出现在 `AGENTS.md` §2.3 的**豁免清单**里（`Pin<N> (VP_RIF_VS_RIF1)` 与 DMA 导入顺序噪音，
+   两类消息的实测原文行见 §3.5.6.1 / §3.5.6.2）；
    ②生成的 `main.c` 里有对应的 `MX_xxx_Init()`。**"generate 返回 0"不等于"配置生效了"。**
 
 ### ⚠️ 其它实测细节
@@ -350,7 +352,13 @@ Dma.TIM2_CH1.0.RequestParameters=Instance,Direction,PeriphInc,MemInc,PeriphDataA
 > `IP (DMA) : Parameter (xxx) has Id (TIM2_CH1) currently not set`。
 > 这是**导入顺序噪音** —— CubeMX 按字母序先解析 `Dma.*`、后解析 `Mcu.IP*`，
 > 解析 DMA 时 TIM2 尚未建立。**生成结果完全正确，不要去"修"它。**
-> （同理忽略 `Pin10 (VP_RIF_VS_RIF1) cannot be retrieved` 与 `RCC ... has invalid value`。）
+> 2026-11-05 补测：这 8 行**确实带 `(OptionalMessage_ERROR)` 前缀**（原文行见 §3.5.6.2），
+> 已按「已知豁免项」写进 `AGENTS.md` §2.3 的豁免清单（含识别条件），不是靠"顺手忽略"混过去。
+> `Pin10 (VP_RIF_VS_RIF1) cannot be retrieved` 同属豁免清单（成因见 §3.5.6 的 2026-11-05 定位）。
+> ⚠️ 但 `RCC ... has invalid value` **不在豁免内**：它同样带 `(OptionalMessage_ERROR)`，语义是
+> 「缓存时钟值与本工程实际配置不一致」，属**真错误** —— 按 §3.5.6 的做法清掉过期 RCC 缓存字段后
+> 它就会消失（2026-10-15 的 `usb-report` 日志里有、`usb-clean` 日志里没有，正是清理前后的对照）。
+> 本行此前的"同理忽略 `RCC ... has invalid value`"措辞是错的，2026-11-05 已更正。
 
 **附带澄清：`CoupleFile` 决定生成物形状**
 
@@ -438,9 +446,140 @@ PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
 清理无效的历史 RCC 缓存参数后，正确分频及上述 CDC 生成物均存在，
 没有 `Cannot map` 或 `IP not ready`；仍有一条
 `(OptionalMessage_ERROR) Pin11 (VP_RIF_VS_RIF1) cannot be retrieved for this MCU`。
-该诊断的来源尚未定位，**不满足 AGENTS.md 要求的无 OptionalMessage_ERROR 的完整 L4 门槛**。
-历史 §3.5.5 中将某些告警称为噪音，不等于免除这条门槛。
+**该诊断的来源已于 2026-11-05 定位**（见下），是工具级缺陷、与工程配置无关；
+`AGENTS.md` §2.3 的 L4 门槛已据此改为白名单式：**本节这条 `VP_RIF_VS_RIF1` 与 §3.5.6.2 的 DMA 导入顺序噪音可豁免**，
+其余 `OptionalMessage_ERROR` 一律按失败处理；两类豁免出现时都必须在提交正文里逐条注明。
 本文配置核对为 L1，隔离生成仅提供观察证据；未构建或烧录 USB 变体，未做枚举/收发 L5。
+
+#### 3.5.6.1 `VP_RIF_VS_RIF1` 诊断已定位：CubeMX 6.18.1-RC2 的 F1 文本导入缺陷（2026-11-05）
+
+**结论**：这是 `-q` 脚本模式**文本导入路径**（日志里的 `ImportTextPane:234`）对 STM32F1 系列的
+工具级缺陷 —— 导入器在遍历完 `Mcu.Pin*` 之后会去解析一个 F1 专有的重映射虚拟引脚
+`VP_RIF_VS_RIF1`，而该型号器件库里没有这个虚拟引脚，于是留下一条 `(OptionalMessage_ERROR)`。
+它与 **`.ioc` 内容、引脚配置、版本戳都无关**：进程仍返回 0，生成物完整正确。
+
+对照实验（同一台机器、同一个 exe，全部在仓库外的隔离副本里做；
+**本机留证**，路径 `D:/Projects/GitHub/.tmp-l4-exp/`，每次运行后立刻复制
+`~/.stm32cubemx/STM32CubeMX.log`）。**该副本与 `~/.stm32cubemx/` 都在仓库外、不入库、
+可能被清理**，所以下表之后把关键日志原文行内联，读者不必去本机找：
+
+| # | 动作 | `OptionalMessage_ERROR` | `Cannot map` |
+| - | ---- | ----------------------- | ------------ |
+| 1 | 副本 `.ioc` 只做 `config load` + `config save`（仅刷版本戳，不生成） | **1** 条 `Pin3 (VP_RIF_VS_RIF1)` | 0 |
+| 2 | 刷新版本戳后再 `project generate` | **1** 条 `Pin3` | 0 |
+| 3 | `load STM32F103C8Tx` 新建工程后 `project generate`（**不经文本导入**） | **0** 条 | 0 |
+| 4 | 把第 3 步 CubeMX **自己产出**的 `freshprobe.ioc`（`Mcu.PinsNb=2`、全文无 `VP_RIF`）再 `config load` + `project generate` | **1** 条 `Pin2` | 0 |
+| 5 | QA 独立复跑第 4 步 | **1** 条 `Pin2` | 0 |
+
+**日志原文行**（取自上述运行的本机留证，`ImportTextPane:234` 前缀与时间戳原样，未改写）：
+
+```text
+2026-11-05 15:09:36,387 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) Pin3 (VP_RIF_VS_RIF1) cannot be retrieved for this MCU
+2026-11-05 15:13:41,507 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) Pin2 (VP_RIF_VS_RIF1) cannot be retrieved for this MCU
+```
+
+第一行出自第 1 行实验（`.tmp-l4-exp/log-save-run.log:328`，`Mcu.PinsNb=3`），
+第二行出自第 4 行实验（`.tmp-l4-exp/log-freshreload-run.log:318`，`Mcu.PinsNb=2`）；
+第 3 行实验的 `log-fresh-run.log` 里该字符串**出现 0 次**。三份留证都是本机文件
+（仓库外，不入库），故上面两行按原文内联，作为判据的可见证据。
+
+**判据**（两条都成立，才可当作"已知豁免项"而不是"顺手放过"）：
+
+1. 走 `config load`（文本导入）→ **必现且恰好 1 条**；用 `load <MCU>` 在内存里建模 → **0 条**；
+2. 诊断里的序号 `<N>` **恒等于**该 `.ioc` 的 `Mcu.PinsNb`（上表第 1/2 行 `PinsNb=3` → `Pin3`，
+   第 4 行 `PinsNb=2` → `Pin2`），说明它表示"一个被遍历到的虚拟引脚"，不是某个真实引脚出错。
+
+生成行为不受影响，四个核验点在第 2 次运行里同时确认：生成的 `Core/Src/main.c` 仍有
+`MX_GPIO_Init()`（声明 / 调用 / 定义分别在 50 / 88 / 147 行）；
+`Core/Inc/main.h` 的 `#include "bluepill.h"` 仍在 `/* USER CODE BEGIN Includes */` 块内；
+这两份生成物与仓库现有文件**忽略行尾后逐字节一致**（`diff --strip-trailing-cr` 无输出）。
+
+`config save` 的 side effect（供判断"要不要顺手刷版本戳"）：`MxCube.Version` 6.17.0 → 6.18.1、
+`MxDb.Version` DB.6.0.170 → DB.6.0.181，另新增 3 条 `PCC.*` 显示参数
+（`PCC.Bar.Display=Horizontal Bar`、`PCC.SequenceTime=1.0 ms`、`PCC.SequenceTime.Unit=ms`），
+**没有任何引脚 / 时钟 / 外设语义变化**；`.ioc` 会被改写成 CRLF，但 `.gitattributes` 的
+`text=auto eol=lf` 会在 `add` / `diff` 时归一化，不会产生整文件 diff。
+**本轮不采纳该改动：它关不掉这条诊断，纯属无收益的改动。**
+`AGENTS.md` §2.3 的 L4 门槛依据本节的判据改成了白名单式。
+
+#### 3.5.6.2 `IP (DMA)` 与 `IP (RCC)` 两类消息的 tag 实测（2026-11-05）
+
+**要回答的问题**：§3.5.5 让读者忽略 `IP (DMA) : Parameter (...) has Id (...) currently not set`
+与 `RCC ... has invalid value` 两类消息，但 §2.3 的新白名单最初只列了 `VP_RIF_VS_RIF1`。
+若这两类也带 `(OptionalMessage_ERROR)` 前缀，**DMA / RCC 场景下 L4 门槛就不可达**。
+
+**结论（两类都带 tag，但处置不同）**：
+
+| 消息 | 日志 tag（实测） | 处置 |
+| ---- | ---------------- | ---- |
+| `IP (DMA) : Parameter (<参数名>) has Id (<请求名>) currently not set` | **`(OptionalMessage_ERROR)`** | 计入 §2.3 **豁免清单**：文本导入顺序噪音，每个 DMA 请求块**恰好 8 条**，生成物完全正确 |
+| `IP (RCC) : Parameter (<名>) has invalid value (<值>)` | **`(OptionalMessage_ERROR)`** | **不豁免**：缓存时钟值与实际配置不一致的**真错误**，清掉过期 RCC 缓存字段即消失（§3.5.6 的 2026-10-15 对照） |
+
+**实验**（隔离副本 `D:/Projects/GitHub/.tmp-dma-probe/`，仓库外，跑完即删；
+每次运行后立刻复制 `~/.stm32cubemx/STM32CubeMX.log` 留证，用 `diff` 取新增行）：
+
+1. `load STM32F103C8Tx` + `project generate` → **0 条**（不经文本导入，同 §3.5.6.1 判据 1）。
+2. `set ip parameters TIM2 InputCapture PA0-WKUP S_TIM2_CH1_ETR Prescaler 1 Period 65536`
+   返回 `OK` 但 `.ioc` 里一个字节的 TIM2 都没有 —— 与 §3.5.2 记录一致，**别指望这条命令**。
+3. 文本手工加 `PA0-WKUP.Signal=S_TIM2_CH1_ETR` + `TIM2.*`：`PA0-WKUP.Mode` 写
+   `Input Capture` / `Input_Capture_CH1` / `Input Capture mode` 依次得到
+   `(OptionalMessage_WARN) Unknown mode (...) for pin (PA0-WKUP)` +
+   `(OptionalMessage_ERROR) Unable to find appropriate mode for pin (PA0-WKUP)`，
+   TIM2 始终不落地（`Mcu.IPNb` 回到 3）→ 这条路径**不适合**做 DMA 复现。
+4. 改用 USART1 异步 + `Dma.USART1_TX.0.*`（`DMA1_Channel4`）：若 `.ioc` 的 `Mcu.IP*` 里
+   **没有 DMA**，整个 `Dma.*` 块被**静默丢弃**，日志**零消息**（容易误判成"没问题"）。
+5. 在 4 的基础上显式写 `Mcu.IP<n>=DMA` + `Mcu.IPNb+1` → **必现 8 条 `(OptionalMessage_ERROR)`**，
+   同时 `MX_DMA_Init()` 与 `__HAL_LINKDMA` 正常生成。下面就是第 5 步的**日志原文行**。
+
+```text
+2026-11-05 16:56:24,822 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) Pin4 (VP_RIF_VS_RIF1) cannot be retrieved for this MCU
+2026-11-05 16:56:25,758 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) IP (DMA) : Parameter (Instance) has Id (USART1_TX) currently not set
+2026-11-05 16:56:25,758 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) IP (DMA) : Parameter (Direction) has Id (USART1_TX) currently not set
+2026-11-05 16:56:25,758 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) IP (DMA) : Parameter (PeriphInc) has Id (USART1_TX) currently not set
+2026-11-05 16:56:25,758 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) IP (DMA) : Parameter (MemInc) has Id (USART1_TX) currently not set
+2026-11-05 16:56:25,759 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) IP (DMA) : Parameter (PeriphDataAlignment) has Id (USART1_TX) currently not set
+2026-11-05 16:56:25,759 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) IP (DMA) : Parameter (MemDataAlignment) has Id (USART1_TX) currently not set
+2026-11-05 16:56:25,759 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) IP (DMA) : Parameter (Mode) has Id (USART1_TX) currently not set
+2026-11-05 16:56:25,759 [INFO] ImportTextPane:234 - (OptionalMessage_ERROR) IP (DMA) : Parameter (Priority) has Id (USART1_TX) currently not set
+```
+
+8 条 = `Dma.<请求>.0.RequestParameters` 里那 8 个参数，顺序也一致；
+`<参数名>` 固定为 `Instance` / `Direction` / `PeriphInc` / `MemInc` /
+`PeriphDataAlignment` / `MemDataAlignment` / `Mode` / `Priority`，
+`<请求名>` 就是 `Dma.Request0` 里写的请求（这次 `USART1_TX`，§3.5.5 那次 `TIM2_CH1`）。
+**故识别条件可写成机械判据**：条数 = 8 × DMA 请求块数、参数名取自固定 8 项、请求名与 `Dma.Request*` 一致。
+
+**生成物证据**（同一份产物，`runW/probe/`）：
+
+- `Src/main.c`：`static void MX_DMA_Init(void);`（53 行）、调用 `MX_DMA_Init();`（93 行）、
+  定义（182 行）三处齐全；
+- `Src/stm32f1xx_hal_msp.c`：`hdma_usart1_tx.Instance = DMA1_Channel4;`（118 行）与
+  `__HAL_LINKDMA(huart,hdmatx,hdma_usart1_tx);`（131 行）。
+  → **8 条 ERROR 与代码正确性无关**，属导入顺序噪音。
+
+**RCC 那三行的原文**（本机 2026-10-15 审计产物，出自 `.pio/template-audit/` ——
+`.pio/` 已被 `.gitignore` 排除，**新克隆的仓库里没有这些 log**；
+**本机可复核，原文内联于下**，不要把它当公共可复核证据）：
+
+```text
+.pio/template-audit/usb-report/generate.log:367  (OptionalMessage_ERROR) IP (RCC) : Parameter (ADCFreqValue) has invalid value (36000000)
+.pio/template-audit/usb-report/generate.log:368  (OptionalMessage_ERROR) IP (RCC) : Invalid parameter (FamilyName)
+.pio/template-audit/usb-report/generate.log:369  (OptionalMessage_ERROR) IP (RCC) : Parameter (MCOFreq_Value) has invalid value (72000000)
+```
+
+注意第 368 行**形态不同**：它是 `Invalid parameter (FamilyName)`，不是 `has invalid value`。
+按 `AGENTS.md` §2.3 的「其余必须为 0」，它与非豁免的 `has invalid value` **同样判失败**，
+所以 **RCC 这一类整体不豁免** —— 不要以为"只有 `has invalid value` 才挡"。
+
+清理过期 RCC 缓存参数后的 `usb-clean/generate.log`（同一 `.pio/` 本机留证，不入库）
+只剩 `Pin11 (VP_RIF_VS_RIF1)` 一条 —— **三行全部消失**，所以它们都是真错误、都不进豁免清单。
+
+**边界说明**：
+
+- `(OptionalMessage_WARN) ...` 不是 ERROR，不计入门槛（本次实测：`Unknown mode (...) for pin (...)`）；
+- `(OptionalMessage_ERROR) Unable to find appropriate mode for pin (...)` 是 ERROR 且**不在豁免内**；
+- 只有一个 `Dma.*` 块、`Mcu.IP*` 里却没有 `DMA` 时，块被静默丢弃、日志无任何消息 ——
+  **"日志干净"不等于"DMA 生效"**，判定生效永远看生成物（`MX_DMA_Init` / `__HAL_LINKDMA`）。
 
 ---
 

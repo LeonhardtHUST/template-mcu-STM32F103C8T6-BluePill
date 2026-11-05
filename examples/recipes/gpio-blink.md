@@ -60,7 +60,9 @@ HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 1. **把外设配置抄进根目录 `.ioc`**：本配方**已配好 PC13**，跳过；若要加别的引脚才需要动 `.ioc`。
 2. **生成并核验（L4）**：CubeMX GUI 或 `scripts/cubemx-generate.mx`；
-   日志无 `Cannot map` / `OptionalMessage_ERROR`，`main.c` 里有 `MX_GPIO_Init()`。
+   日志 `Cannot map signal` 为 0、`OptionalMessage_ERROR` 只允许豁免清单里的两类
+   （`VP_RIF_VS_RIF1` 一条 + DMA 导入顺序噪音 8 条/请求块）
+   （门槛见 [`AGENTS.md`](../../AGENTS.md) §2.3），`main.c` 里有 `MX_GPIO_Init()`。
 3. **只拷源码**：`blink.c` / `blink.h` 拷进 `Core/`，调用写进 `main.c` 的 USER CODE 块，
    改用 `BP_LED_*` 宏；Keil 样板 / `Drivers/` 一律丢。
 4. **`pio run`（L3）**：记录 PlatformIO 报告的 Flash / RAM 字节数。

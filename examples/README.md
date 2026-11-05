@@ -39,7 +39,10 @@ examples/
 1. **把外设配置抄进本仓根目录的 `.ioc`**（`Mcu.IP*` / `Mcu.Pin*` / `<Pin>.Signal` /
    `<IP>.IPParameters` 白名单一起补），然后在 CubeMX 里 `project generate`。
    首选 GUI；脚本化用 `scripts/cubemx-generate.mx`。这是 `AGENTS.md` §2.1 / §2.3 要求的变更。
-2. **核验生成物（L4）**：日志无 `Cannot map` / `OptionalMessage_ERROR`，
+2. **核验生成物（L4）**：日志 `Cannot map signal` 为 0，`OptionalMessage_ERROR` 只允许出现在
+   **豁免清单**里 —— `Pin<N> (VP_RIF_VS_RIF1)` 一条，以及 DMA 导入顺序噪音
+   （每个 DMA 请求块恰好 8 条 `IP (DMA) : Parameter (...) has Id (...) currently not set`）
+   （门槛见 [`../AGENTS.md`](../AGENTS.md) §2.3），
    `Core/Src/main.c` 里出现对应的 `MX_xxx_Init()`。CubeMX 的错误是**静默**的（D5）。
 3. **只拷源码进 `Core/`**：业务代码放进 `main.c` 的 USER CODE 块或独立用户源码，
    优先用 [`../Core/Inc/bluepill.h`](../Core/Inc/bluepill.h) 的 `BP_*` 宏表达板上接线；

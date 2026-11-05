@@ -64,7 +64,24 @@ feat: 加了很多功能还顺手格式化全仓库   # 不原子，混了格式
 2. **只允许在 `USER CODE BEGIN/END` 块内写用户代码**。写在块外的内容会在下次 `project generate` 时被覆盖。
 3. **手改 `.ioc` 需要校验**。CubeMX 对 `.ioc` 的错误是**非致命**的：信号名写错只会在日志留一行
    `Cannot map signal`，生成仍返回成功，外设被静默丢弃。任何 `.ioc` 改动后必须核验：
-   - 生成日志里没有 `Cannot map` / `OptionalMessage_ERROR`；
+   - 生成日志里 `Cannot map signal` 必须为 **0**；
+   - `OptionalMessage_ERROR` **只允许**出现在下面两类已知豁免项上，**其余必须为 0**。
+     判据是**条数与文本匹配**，不做「与本次改动相关 / 不相关」这类主观判断：
+     1. `Pin<N> (VP_RIF_VS_RIF1) cannot be retrieved for this MCU`
+        —— CubeMX 6.18.1-RC2（DB 6.0.181）的 F1 文本导入路径缺少该虚拟引脚导致的，
+        与工程配置无关，`<N>` 恒等于 `Mcu.PinsNb`；对照实验与判定依据见
+        [`docs/TOOLING-cubemx.md`](docs/TOOLING-cubemx.md) §3.5.6.1。
+     2. `IP (DMA) : Parameter (<参数名>) has Id (<请求名>) currently not set`
+        —— 文本导入顺序噪音：每个 DMA 请求块**恰好 8 条**，参数名固定为
+        `Instance` / `Direction` / `PeriphInc` / `MemInc` / `PeriphDataAlignment` /
+        `MemDataAlignment` / `Mode` / `Priority`（即 `.ioc` 里 `RequestParameters` 那 8 项），
+        `<请求名>` 必须等于 `.ioc` 的 `Dma.Request*`（如 `USART1_TX`、`TIM2_CH1`）；
+        生成物不受影响（`MX_DMA_Init()` 与 `__HAL_LINKDMA` 都在），实测见同节。
+     **出现豁免项时必须在提交正文里逐条注明**，不得静默放过。
+     反例（**不在豁免内，一律按失败处理**）：`IP (RCC) : Parameter (...) has invalid value (...)`
+     是缓存时钟值与实际配置不一致的**真错误**，按 `TOOLING-cubemx.md` §3.5.5 清掉无效 RCC
+     缓存字段后即消失；`Unable to find appropriate mode for pin (...)`、`Cannot map signal`
+     同样按失败处理；
    - 生成的 `Core/Src/main.c` 里有对应的 `MX_xxx_Init()`。
    细节与正确的枚举写法见 `TEMPLATE-PLACEHOLDERS.md` 的 D3–D5。
 4. **不要提交 `Drivers/`、`Makefile`**：HAL/CMSIS/启动文件由 PlatformIO `framework-stm32cubef1` 提供，已在 `.gitignore` 中排除。
@@ -115,7 +132,7 @@ feat: 加了很多功能还顺手格式化全仓库   # 不原子，混了格式
 | L1 静态 | 人工核对文件内容一致性 | 文档、配置 |
 | L2 主机回归 | 见下方 gcc 命令 | 动了 `Core/Src/stdio_port.c` 等可主机编译的代码 |
 | L3 构建 | `pio run` | 任何影响编译的改动 |
-| L4 生成核验 | CubeMX `-q` 重新生成后核对 `main.c` 的 `MX_xxx_Init` 与日志 | 任何 `.ioc` 改动（**必须**，见 §2.3） |
+| L4 生成核验 | CubeMX `-q` 重新生成后核对 `main.c` 的 `MX_xxx_Init` 与日志（门槛见 §2.3 的豁免清单：`VP_RIF_VS_RIF1` + DMA 导入顺序噪音） | 任何 `.ioc` 改动（**必须**，见 §2.3） |
 | L5 实板 | 烧录 + 观察现象（LED / 串口 / 波形） | 影响运行时行为的改动 |
 
 主机回归（需要 GCC，不需要开发板；Linux/macOS 输出到 `/tmp`，Windows 换成项目内临时路径）：

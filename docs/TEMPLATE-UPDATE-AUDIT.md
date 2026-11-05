@@ -84,7 +84,9 @@ exe 6.18.1-RC2、数据库 DB.6.0.181、FW_F1 V1.8.7：
 | 去掉无效 RCC 缓存字段，只保留必要时钟配置与显式分频 | 正确分频、CDC 文件、PCD 模块、IRQ 与初始化调用均存在，仅剩一条 VP_RIF 诊断 |
 
 最后一组仍有 `(OptionalMessage_ERROR) Pin11 (VP_RIF_VS_RIF1) cannot be retrieved for this MCU`，
-来源尚未定位，**完整 L4 未通过**。因此只落地已核对的说明和边界，没有把生成实验变成默认 USB 功能。
+来源**在当时尚未定位**，故当时判为**完整 L4 未通过**（本行保留为当时的判定记录）。因此只落地已核对的说明和边界，没有把生成实验变成默认 USB 功能。
+该诊断的成因已于 2026-11-05 定位为 CubeMX 6.18.1-RC2 的 F1 文本导入缺陷，L4 门槛已据此改为白名单式，
+见 [`TOOLING-cubemx.md`](TOOLING-cubemx.md) §3.5.6.1 与 [`AGENTS.md`](../AGENTS.md) §2.3。
 临时输入、日志和产物保留在本机 `.pio/template-audit/`，未加入模板版本库。
 
 ## 范围与剩余事项
