@@ -142,7 +142,7 @@
 | **按 tier 分组** | **S1 = 11** 条（`1, 2, 2b, 3, 4, 5, 5b, 6, 6b, 12, 13`）；**S2 = 8** 条（`7, 8, 8b, 9, 9b, 10, 11, 14`）；**S3 = 7** 行自有文件（不计入 19 条主台账） |
 | **link-only 条数（`store = link`）** | **16** 条（`1, 2, 2b, 3, 4, 5, 5b, 6, 6b, 8b, 9b, 10, 11, 12, 13, 14`）；另有 `store = quote` 1 条（#8）、`store = file` 2 条（#7 / #9） |
 | **实际入库文件数（`docs/bluepill/`）** | **18** 个：顶层 **7** 个（`README.md`、`SOURCES.md`、`board-pinout.md`、`examples.md`、`ATTRIBUTION.md`、`genericSTM32F103C8.json`（#9 资料副本）、`original-schematic.pdf`（#7 条件入库））+ `examples/` 副本 **11** 个（2026-11-05 新增，见下方第二张表） |
-| **合计体积（`docs/bluepill/` 入库文件实测字节数）** | **实测合计 272770 B ≈ 266 KB ≤ 15 MB**（Q12 硬上限，未收紧到 5 MB）；逐文件实测见下表 |
+| **合计体积（`docs/bluepill/` 入库文件实测字节数）** | **实测合计 272840 B ≈ 266 KB ≤ 15 MB**（Q12 硬上限，未收紧到 5 MB）；逐文件实测见下表 |
 | **最近核验日期** | **2026-11-05**（2026-11-04 PM 逐行清单记录 + #7 / #9 实测下载、#8 页面 WebFetch 复核；2026-11-05 新增 `examples/` 副本并重算体积） |
 
 逐文件实测（顶层 7 个，2026-11-05 用 `wc -c` 复测，单位 B）：
@@ -156,7 +156,7 @@
 | `docs/bluepill/ATTRIBUTION.md` | 4111 |
 | `docs/bluepill/genericSTM32F103C8.json` | 1150 |
 | `docs/bluepill/original-schematic.pdf` | 151372 |
-| **小计（顶层 7 个）** | **235172 B**（不含 `SOURCES.md` 自身时 201778 B） |
+| **小计（顶层 7 个）** | **235242 B**（不含 `SOURCES.md` 自身时 201778 B） |
 
 `docs/bluepill/examples/` 副本 11 个文件（根级 `examples/` 的镜像，2026-11-05 新增，同步口径见 `examples/README.md` 顶部说明）：
 
@@ -177,11 +177,11 @@
 
 | 口径 | 值 |
 | ---- | -- |
-| **合计（18 个入库文件）** | **272770 B ≈ 266 KB**（`du -sb docs/bluepill` 实测 272770 B；`du -sh` 另计文件系统块开销） |
+| **合计（18 个入库文件）** | **272840 B ≈ 266 KB**（`du -sb docs/bluepill` 实测 272840 B；`du -sh` 另计文件系统块开销） |
 
 > 注：`SOURCES.md` 记录自身字节数属于自引用，回填本表后其字节数会有微调；
 > 本表「合计」取复测值（顶层 7 个 + 副本 11 个）；最终以
-> `find docs/bluepill -type f -printf '%s\n' | awk '{s+=$1} END {print s}'` 逐文件求和实测为准，恒远低于 15 MB。
+> `find docs/bluepill -type f -exec cat {} + | wc -c` 逐文件求和实测为准，恒远低于 15 MB（POSIX 写法，GNU / BSD / macOS 通用；GNU find 的 -printf 与 du -sb 不跨平台）。
 
 > 体积判据与版权判据**相互独立**：不得以「体积没超 15 MB」论证 ST 官方 PDF 可以入库原件（§5.4 判据 5）。
 > 统计口径为「本次新增且将纳入 git 跟踪的文件合计字节数」；`du -sh docs/bluepill` 仅作辅助观察。
