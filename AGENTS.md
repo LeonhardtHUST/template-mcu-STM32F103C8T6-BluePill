@@ -22,7 +22,7 @@
 
 - `<type>` 只能是：`feat` `fix` `docs` `chore` `refactor` `test` `build` `ci` `perf` `style` `revert`。
 - `<scope>` 可选，用文件名/模块名：`ioc` `pio` `vscode` `scripts` `core` `git` `docs`。
-- **简述用中文**（与本仓库既有历史一致），动词开头，不超过 50 字，结尾不加句号。
+- **简述用中文**（与本仓库既有历史一致，至少含一个汉字；首字不限，`Q4` / `GPIO` / `128K` 开头亦可），动词开头，不超过 50 字，结尾不加句号。
 - 正文说清"为什么"，不要复述 diff。
 
 ### 1.2 正例

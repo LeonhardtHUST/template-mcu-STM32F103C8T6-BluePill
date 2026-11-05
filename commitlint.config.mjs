@@ -1,7 +1,7 @@
 // 提交信息校验：在 @commitlint/config-conventional 之上补齐 AGENTS.md §1 的中文规范。
 //
 // 校验边界（重要）：
-//   - 机器能判定的：简述中文 / 首字汉字 / ≤50 字 / 结尾无句号、验证等级、
+//   - 机器能判定的：简述含汉字 / ≤50 字 / 结尾无句号、验证等级、
 //     构建数字（Flash / RAM）、AI 署名。
 //   - 机器判不准的：「动词开头」属于语义判断，中文动词没有可靠词表，
 //     强行正则会大量误伤，因此放进根目录 README「提交规范」章节的人工核对清单。
@@ -13,11 +13,10 @@ const SUBJECT_MAX_CHARS = 50;
 
 const chineseSubject = (parsed) => {
   const subject = parsed.subject || '';
+  // 只要求「含汉字」，不限定首字：允许 `docs(plan): Q4 决策行回指 Q15` 这类
+  // 以型号 / 编号 / 英文标识开头的简述。全英文或全符号仍然拒绝。
   if (!/[\u4e00-\u9fa5]/.test(subject)) {
     return [false, '简述必须使用中文（至少含一个汉字）'];
-  }
-  if (!/^[\u4e00-\u9fa5]/.test(subject)) {
-    return [false, '简述首字必须是汉字；「动词开头」请按 README 提交规范人工核对'];
   }
   const length = Array.from(subject).length;
   if (length > SUBJECT_MAX_CHARS) {
@@ -81,8 +80,9 @@ export default {
     },
   ],
   rules: {
-    // config-conventional 的 subject-case 面向英文大小写；中文简述不适用，
-    // 首字汉字与长度已由 chinese-subject 覆盖，避免误伤。
+    // config-conventional 的 subject-case 面向英文大小写，会把中文与
+    // 「Q4」「GPIO」这类混排简述判成 sentence-case；汉字与长度已由
+    // chinese-subject 覆盖，关掉以避免误伤。
     'subject-case': [0],
     'chinese-subject': [2, 'always'],
     'verify-level': [2, 'always'],
