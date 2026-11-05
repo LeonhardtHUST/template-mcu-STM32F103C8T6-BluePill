@@ -101,8 +101,21 @@ rm -rf docs/bluepill/examples && cp -r examples docs/bluepill/examples
 | `../Core/…`、`../AGENTS.md`、`../test/…`、`../TEMPLATE-PLACEHOLDERS.md` | 加两层 `../`（`recipes/` 与示例子目录下加三层） |
 | `examples/` 内部的互相引用（`gpio-blink/…`、`recipes/…`、`INDEX.md`、`README.md`） | **保持不变**（副本结构同构） |
 
-副本内链接是否仍然可达，改动后请逐条 `ls` 抽查：把副本里所有以 `../` 开头的链接目标拼成路径，
-确认都落在本仓库真实文件上（不要只看渲染，渲染器不会报死链）。
+副本内链接是否仍然可达，改动后请**跑校验脚本**而不是逐条 `ls` 抽查（不要只看渲染，渲染器不会报死链）：
+
+```bash
+./scripts/check-examples-mirror.sh                                              # POSIX / Git Bash
+powershell -ExecutionPolicy Bypass -File .\scripts\check-examples-mirror.ps1    # Windows 原生
+```
+
+它一次比完四件事：两棵树相对路径集合、所有非 `.md` 文件逐字节、归一化后的 Markdown 正文、
+以及两棵树全部相对链接的可解析性。退出码 `0` 才算一致；`1` 会逐条打印漂移文件与
+`文件:行号 → 目标` 形式的死链；`2` 是前置条件错误（不在仓库根 / 副本目录不存在）。
+
+判据只有上面那两条**合法差异**（副本链接比根级多 1～3 层 `../`；副本 `README.md` 顶部那段
+blockquote），其余一律算漂移——所以**手改副本、只改一侧、镜像后忘了贴回 blockquote** 都会被拦下。
+根级 `examples/` 被 `--drop-examples` 删掉时脚本仍然可用：结构 / 字节 / 正文检查打 `SKIP`，
+副本死链扫描照常执行，这正是副本存在的理由。
 
 > **注意**：上面的 `cp -r` 会整目录覆盖，`docs/bluepill/examples/README.md` 顶部那段
 > 「本目录是副本」的 blockquote 需在镜像后重新贴回（它只属于副本，根级没有）。

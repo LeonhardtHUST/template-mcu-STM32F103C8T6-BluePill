@@ -149,6 +149,7 @@ Blue Pill 是社区通用板 / 兼容板，**不存在「大厂官方出品的 B
 | `genericSTM32F103C8.json` | PlatformIO 内置板卡定义的**资料副本**（Apache-2.0） | S2（#9） | 是（唯一推荐入库的非自有原件） |
 | `original-schematic.pdf` | #7 社区原版原理图，按 Q9 条件入库 | S2（#7） | 是（条件入库，授权链存疑） |
 | [`ATTRIBUTION.md`](ATTRIBUTION.md) | #7 的来源 / 直链 / 下载日期 / 版权状态 / 使用范围 | S3 自有 | 否 |
+| [`examples/`](examples/README.md) | 根级 `examples/` 的镜像副本（2 个自有示例 + 3 篇配方），`--drop-examples` 不影响 | S3 自有 | 否 |
 
 体积实测、许可与访问证据见 `SOURCES.md`。
 
