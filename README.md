@@ -191,7 +191,7 @@ git config core.hooksPath .vite-hooks # 启用提交信息校验钩子
 
 | 脚本 | 作用 |
 | ---- | ---- |
-| `scripts/init-project.sh` / `.ps1` | 初始化新工程：A2 六处联动（`.ioc` 文件名、`ProjectName`、`ProjectFileName`、`.vscode/tasks.json`、`scripts/cubemx-generate.mx`、`README.md`）+ 仓库名 + README 标题；`--dry-run` 只打印不写文件、`--yes` 用默认值、`--flash 64k\|128k`（默认 64k，选 128K 提示同步 `board_build.ldscript`） |
+| `scripts/init-project.sh` / `.ps1` | 初始化新工程：A2 六处联动（`.ioc` 文件名、`ProjectName`、`ProjectFileName`、`.vscode/tasks.json`、`scripts/cubemx-generate.mx`、`README.md`）+ 仓库名 + README 标题；`--dry-run` 只打印不写文件、`--yes` 用默认值、`--flash 64k\|128k`（默认 64k，选 128K 提示同步 `board_build.ldscript`）、`--drop-examples` 顺带删除根级 `examples/` 与 README 的 EXAMPLES 标记区块（默认保留；`docs/bluepill/examples/` 副本保留） |
 | `scripts/cubemx-init.mx` / `cubemx-generate.mx` | CubeMX 命令行脚本；`__PROJECT_DIR__` 绝对路径需人工填 |
 | `scripts/init-clangd.sh\|.ps1`、`disable-clangd.sh\|.ps1` | clangd 编译数据库生成 / 清理 |
 | `.vite-hooks/commit-msg` | 提交信息校验钩子（手写源文件，需自己启用） |
@@ -226,6 +226,7 @@ git config core.hooksPath .vite-hooks # 启用提交信息校验钩子
   [`ATTRIBUTION.md`](docs/bluepill/ATTRIBUTION.md)（适用范围仅限该原理图）。
   新增资料合计 **≤ 15 MB**（Q12 拍板，未收紧到 5 MB）。
 
+<!-- BEGIN EXAMPLES -->
 ## examples
 
 [`examples/`](examples/INDEX.md) 是**可选资料**：2 个自有最小示例（GPIO 点灯、USART1 115200）
@@ -234,6 +235,12 @@ git config core.hooksPath .vite-hooks # 启用提交信息校验钩子
 按 Q4 拍板**不要求 `pio run`**、不触发 L3 / L4。统一接入路径是
 「把外设配置抄进 `.ioc` → 生成 → 只拷源码 → `pio run` → 按 L2 / L3 / L5 验证」，见
 [`examples/README.md`](examples/README.md)；资料侧索引与源码侧用相对链接互指。
+
+派生工程不需要示例时，初始化脚本支持 `--drop-examples`（PowerShell 用 `-DropExamples`）
+一并删掉根级 `examples/` 与本节（本节被 `<!-- BEGIN EXAMPLES -->` / `<!-- END EXAMPLES -->` 包住，
+脚本按标记成对删除，不会留死链）；**`docs/bluepill/examples/` 的资料副本不受该参数影响**，
+删掉根级示例后资料区仍可查。
+<!-- END EXAMPLES -->
 
 ## 故障排查
 

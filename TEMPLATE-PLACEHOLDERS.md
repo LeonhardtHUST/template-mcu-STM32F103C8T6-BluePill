@@ -73,9 +73,9 @@ CubeMX 的 `-q` 脚本模式确实能接受手写的时钟/外设/GPIO 参数（
 复制模板后可以用脚本把「六处联动」一次改完，但**它不是全自动**。用法：
 
 ```bash
-bash scripts/init-project.sh <新工程名> [--yes] [--dry-run] [--flash 64k|128k]
+bash scripts/init-project.sh <新工程名> [--yes] [--dry-run] [--flash 64k|128k] [--drop-examples]
 # Windows PowerShell：
-#   powershell -ExecutionPolicy Bypass -File .\scripts\init-project.ps1 <新工程名> [--Yes] [--DryRun] [--Flash 64k|128k]
+#   powershell -ExecutionPolicy Bypass -File .\scripts\init-project.ps1 <新工程名> [-Yes] [-DryRun] [-Flash 64k|128k] [-DropExamples]
 ```
 
 | 项 | 说明 |
@@ -84,8 +84,10 @@ bash scripts/init-project.sh <新工程名> [--yes] [--dry-run] [--flash 64k|128
 | 自动改（Q5 询问） | 用平实大白话问「**新建的工程要把资料原件放进仓库吗？**」，默认**允许**、可手动改；按回答 patch `AGENTS.md` 里 `<!-- BEGIN: BP_THIRD_PARTY_ORIGINAL_RULE -->` / `<!-- END: BP_THIRD_PARTY_ORIGINAL_RULE -->` 标记块（允许 → 移除该约束；不允许 → 写入该约束）。提问文案不含任何生僻术语 |
 | `--dry-run` | **不写任何文件**，只打印将做什么（含将 patch 的 `AGENTS.md` 内容）；可用来先审阅再真跑 |
 | `--yes` | 跳过逐项确认，用默认值（工程名必填、资料原件默认允许、flash 默认 64k） |
+| `--drop-examples` | 顺带删除**根级** `examples/` 整目录，并移除 `README.md` 里 `<!-- BEGIN EXAMPLES -->` / `<!-- END EXAMPLES -->` 包住的区块（含两行标记），避免留死链。**默认保留**；标记不成对时脚本拒绝猜、只提示人工核对。README「目录结构」代码块里的 `examples/` 一行按固定注释文本精确匹配删除，改过注释则该行会保留、需人工删。**`docs/bluepill/examples/` 的资料副本不受影响**（正是它保证删掉根级示例后资料区不死链） |
 | **仍需人工项**（脚本会明确打印，且不自动填绝对路径） | ① `scripts/cubemx-init.mx` 的 `__PROJECT_DIR__`（CubeMX `.mx` 脚本不支持变量，必须硬写本副本绝对路径）② 目录名 / 仓库文件夹名 ③ `git remote -v` 指向的远端地址 ④ clangd 重新生成索引（换机器后重跑 `scripts/init-clangd.sh|ps1`） |
-| **不会改** | `.ioc` 的引脚 / 时钟 / 外设配置、`platformio.ini` 的锁定组合、`Core/Src/**`、`Core/Inc/stm32f1xx_hal_conf.h`、`.git/config`（含 `core.hooksPath`）、用户既有的 `.vscode` 未提交改动 |
+| **不会改** | `.ioc` 的引脚 / 时钟 / 外设配置、`platformio.ini` 的锁定组合、`Core/Src/**`、`Core/Inc/stm32f1xx_hal_conf.h`、`.git/config`（含 `core.hooksPath`）、用户既有的 `.vscode` 未提交改动；`examples/` 默认也不动（只有显式 `--drop-examples` 才删） |
+| 本机注意（PowerShell） | 若你的 PowerShell profile 里用 safe-delete 类封装覆盖了 `Remove-Item`，`-DropExamples` 删目录可能抛异常。**该封装多为「先移进回收站、再抛」**，所以脚本删失败后会先查目录是否还在，保证**两种结局都状态一致**：①目录还在 → 跳过 README 清理（「目录 + 文档」都留着）；②目录已消失 → 继续清理 README 的 EXAMPLES 区块（避免 README 留下 `examples/` 死链）。无论哪种都会提示你改用 `-NoProfile` 重跑：`powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\init-project.ps1 <名字> -Yes -DropExamples`。`.sh` 版用 `rm -rf`，不受影响 |
 
 ## G. `--flash` 选项与 64K / 128K Flash（Q7）
 

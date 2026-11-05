@@ -11,6 +11,8 @@
 #   --dry-run, -n             只打印将做什么，不写任何文件（含将 patch 的 AGENTS.md 内容）
 #   --flash 64k|128k          Flash 容量，默认 64k；选 128k 时提示同步 board_build.ldscript
 #   --keep-originals yes|no   新建的工程是否把资料原件放进仓库，默认 yes（允许）
+#   --drop-examples           顺带删除根级 examples/ 与 README 的 EXAMPLES 标记区块
+#                             （默认保留；docs/bluepill/examples/ 资料副本不受影响）
 #   -h, --help                显示本帮助
 #
 # 说明：
@@ -24,6 +26,7 @@
 #   ./scripts/init-project.sh my-board --dry-run
 #   ./scripts/init-project.sh my-board --repo-name my-repo --yes --flash 128k
 #   ./scripts/init-project.sh my-board --yes --keep-originals no
+#   ./scripts/init-project.sh my-board --yes --drop-examples
 #
 set -euo pipefail
 
@@ -32,6 +35,8 @@ OLD_REPO='template-mcu-STM32F103C8T6-BluePill'
 OLD_IOC="${OLD_PROJECT}.ioc"
 BEGIN_MARK='<!-- BEGIN: BP_THIRD_PARTY_ORIGINAL_RULE -->'
 END_MARK='<!-- END: BP_THIRD_PARTY_ORIGINAL_RULE -->'
+EXAMPLES_BEGIN='<!-- BEGIN EXAMPLES -->'
+EXAMPLES_END='<!-- END EXAMPLES -->'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -43,9 +48,11 @@ DRY_RUN=0
 ASSUME_YES=0
 FLASH='64k'
 KEEP_ORIGINALS='yes'
+DROP_EXAMPLES=0
 
 usage() {
-  sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
+  # 打印本脚本开头的注释块（到 set -euo pipefail 之前），新增参数时无需再改行号。
+  sed -n '2,/^set -euo pipefail$/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
 }
 
 die() {
@@ -93,6 +100,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --keep-originals=*)
       KEEP_ORIGINALS="${1#*=}"
+      shift
+      ;;
+    --drop-examples)
+      DROP_EXAMPLES=1
       shift
       ;;
     --name)
@@ -178,6 +189,13 @@ else
   ORIGINALS_WORD='不允许（写入第三方原件约束）'
 fi
 
+# ---- examples/ 的去留（默认保留；--drop-examples 才删）----
+if [ "$DROP_EXAMPLES" -eq 1 ]; then
+  EXAMPLES_WORD='删除（同时清理 README 的 EXAMPLES 标记区块）'
+else
+  EXAMPLES_WORD='保留'
+fi
+
 # ---- 联动文件清单 ----
 LINKED_FILES=(
   '.vscode/tasks.json'
@@ -200,6 +218,7 @@ printf '新工程名： %s\n' "$NEW_PROJECT"
 printf '新仓库名： %s\n' "$NEW_REPO"
 printf 'Flash   ： %s\n' "$FLASH"
 printf '资料原件： %s\n' "$ORIGINALS_WORD"
+printf '示例目录： %s\n' "$EXAMPLES_WORD"
 printf '\n'
 
 # 1) .ioc 内容 + 文件名（A2 的 ProjectName / ProjectFileName / 文件名三处）
@@ -256,7 +275,55 @@ else
   printf '[预演] 不写 AGENTS.md（上面就是要写入的内容）\n'
 fi
 
-# 4) Flash 选项提示（脚本不改 platformio.ini）
+# 4) 可选：删除 examples/（等价能力来自 B 仓的 remove-examples；A 用 shell 实现，
+#    不引入 .mjs 转发层，且只在 --drop-examples 时生效，默认不动 examples/）
+if [ "$DROP_EXAMPLES" -eq 1 ]; then
+  printf '\n[examples] 处理计划：\n'
+  EXAMPLES_EXISTS=0
+  if [ -d examples ]; then
+    EXAMPLES_EXISTS=1
+    printf '  删除 examples/（当前 %s 个文件）\n' "$(find examples -type f | wc -l | tr -d ' ')"
+  else
+    printf '  examples/ 不存在，无需删除\n'
+  fi
+  README_MARKERS=0
+  if [ -f README.md ]; then
+    # 成对标记必须各出现且仅出现一次，缺一半就拒绝猜、交人工处理，避免留死链。
+    if [ "$(grep -cxF "$EXAMPLES_BEGIN" README.md)" = '1' ] && \
+       [ "$(grep -cxF "$EXAMPLES_END" README.md)" = '1' ]; then
+      README_MARKERS=1
+      printf '  README.md 移除 %s 与 %s 之间的区块（含两行标记）\n' "$EXAMPLES_BEGIN" "$EXAMPLES_END"
+    else
+      printf '  README.md 的 EXAMPLES 标记不成对，跳过清理（请人工核对 examples/ 死链）\n' >&2
+    fi
+  else
+    printf '  README.md 不存在，跳过清理\n' >&2
+  fi
+  printf '  docs/bluepill/examples/ 资料副本不在删除范围内（资料区据此保持可达）。\n'
+  if [ "$DRY_RUN" -eq 1 ]; then
+    printf '[预演] 不删除任何目录、不写 README.md\n'
+  else
+    if [ "$EXAMPLES_EXISTS" -eq 1 ]; then
+      rm -rf examples
+      printf '[已删] examples/\n'
+    fi
+    if [ "$README_MARKERS" -eq 1 ]; then
+      readme_tmp="${REPO_ROOT}/.readme-examples.tmp"
+      awk -v begin="$EXAMPLES_BEGIN" -v end="$EXAMPLES_END" '
+        $0 == begin { skip=1; next }
+        $0 == end   { skip=0; eatblank=1; next }
+        skip        { next }
+        eatblank && $0 == "" { eatblank=0; next }
+        /^examples\/[[:space:]]+# 自有最小示例/ { next }
+                    { eatblank=0; print }
+      ' README.md > "$readme_tmp"
+      mv "$readme_tmp" README.md
+      printf '[已改] README.md 移除 EXAMPLES 标记区块\n'
+    fi
+  fi
+fi
+
+# 5) Flash 选项提示（脚本不改 platformio.ini）
 printf '\n'
 if [ "$FLASH" = '128k' ]; then
   printf '[提醒] 你选了 128K Flash：请在 platformio.ini 里同步设置\n'
@@ -267,7 +334,7 @@ else
   printf '        不改 platformio.ini，也不新建自定义 boards/ 目录。\n'
 fi
 
-# 5) 仍需人工项（脚本不自动填绝对路径、不碰 git）
+# 6) 仍需人工项（脚本不自动填绝对路径、不碰 git）
 printf '\n== 仍需人工处理（脚本不代做）==\n'
 printf '  1. scripts/cubemx-init.mx 里的 project path __PROJECT_DIR__：填本工程的绝对路径\n'
 printf '     （CubeMX 的 .mx 脚本不支持变量，脚本不会自动填）。\n'
@@ -276,6 +343,10 @@ printf '  3. remote：git remote -v 仍指向模板仓库，自己改成新仓�
 printf '  4. clangd：换机器后重跑 scripts/init-clangd.sh（或 .ps1）重新生成索引。\n'
 printf '  5. 资料：docs/bluepill/SOURCES.md 的字段、docs/bluepill/README.md 主索引、\n'
 printf '     board-pinout.md / examples.md / Core/Inc/bluepill.h 要按新板卡重填（见 PLACEHOLDERS H 节）。\n'
+if [ "$DROP_EXAMPLES" -eq 1 ]; then
+  printf '  6. README「目录结构」代码块里的 examples/ 一行按固定注释文本匹配删除，\n'
+  printf '     若你改过该行注释，它会被保留下来，请手动核对并删掉。\n'
+fi
 
 if [ "$DRY_RUN" -eq 1 ]; then
   printf '\n预演结束：以上都没有写入任何文件。确认后再去掉 --dry-run 重跑。\n'
