@@ -213,6 +213,7 @@ git config core.hooksPath .vite-hooks # 启用提交信息校验钩子
 | 逐条来源 / 许可 / 访问证据台账（一行一条宽表） | [`docs/bluepill/SOURCES.md`](docs/bluepill/SOURCES.md) |
 | 40-pin 速查、引脚复用、6 条硬件坑、最小系统要点 | [`docs/bluepill/board-pinout.md`](docs/bluepill/board-pinout.md) |
 | 例程索引与 CubeIDE / MDK → PlatformIO 适配成本 | [`docs/bluepill/examples.md`](docs/bluepill/examples.md) |
+| 示例资料副本（`--drop-examples` 删掉根级 `examples/` 后仍可查） | [`docs/bluepill/examples/README.md`](docs/bluepill/examples/README.md) |
 
 三条必须记住的边界：
 
