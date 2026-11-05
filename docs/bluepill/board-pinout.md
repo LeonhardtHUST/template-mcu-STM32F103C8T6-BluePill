@@ -197,5 +197,5 @@
 | 官方 / 社区三级口径、四类入口对照表、版权与体积策略 | [`README.md`](README.md) |
 | 板上固定接线的 `BP_` 宏 | [`Core/Inc/bluepill.h`](../../Core/Inc/bluepill.h) |
 | 实际生效的 GPIO / 时钟 / 外设配置 | 仓库根目录的 `.ioc`（唯一事实来源，文件名由工程名决定） |
-| 例程索引与适配成本 | [`examples.md`](examples.md) → [`../../examples/INDEX.md`](../../examples/INDEX.md) |
+| 例程索引与适配成本 | [`examples.md`](examples.md) → [`examples/INDEX.md`](examples/INDEX.md)（`docs/bluepill/examples/` 副本；原件在根级 `examples/`） |
 | 派生 / 改名 / Flash 容量选项 | [`TEMPLATE-PLACEHOLDERS.md`](../../TEMPLATE-PLACEHOLDERS.md) |

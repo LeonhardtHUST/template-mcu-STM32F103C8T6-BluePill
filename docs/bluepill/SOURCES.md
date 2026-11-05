@@ -82,10 +82,10 @@
 | S3-OWN | S3 | 自有整理 | 主索引 `README.md` | — | 本仓库自有 | 许可·法务（索引） | 本仓库 | [`README.md`](README.md) | self-owned | 自有 | file | `docs/bluepill/README.md` | 见 §6 | 已核验 | 2026-11-04 本实施轮落盘并静态核对 | 本实施轮相对链接核对、字段口径与 `SOURCES.md` 一致 | — | — | 三级口径、无官方厂商澄清、四类入口对照、版权与 ≤ 15 MB 体积策略、芯片手册官方直链；主理人已写好，本实施轮按需小幅引用 |
 | S3-OWN | S3 | 自有整理 | 来源台账 `SOURCES.md`（本文件） | — | 本仓库自有 | 许可·法务 | 本仓库 | [`SOURCES.md`](SOURCES.md) | self-owned | 自有 | file | `docs/bluepill/SOURCES.md` | 见 §6 | 已核验 | 2026-11-04 本实施轮落盘并静态核对 | 19 条逐行核对、失效项备选、汇总行实测 | — | — | 单一权威台账；派生到新板卡时按 `TEMPLATE-PLACEHOLDERS.md` H 节重填字段 |
 | S3-OWN | S3 | 自有整理 | 板卡引脚速查 `board-pinout.md` | — | 本仓库自有 | 引脚图 / 最小系统 | 本仓库 | [`board-pinout.md`](board-pinout.md) | self-owned | 自有 | file | `docs/bluepill/board-pinout.md` | 见 §6 | 已核验 | 2026-11-04 本实施轮落盘，#8 页面 WebFetch 复核 | 40-pin 表与 6 条硬件坑逐字取自 #8；引 #3 / #6 均标注芯片级 / 另板归属 | — | — | 自研整理（数据引自 #1/#3/#4/#6/#7/#8 并注明出处），**不复制整页扫描或图形** |
-| S3-OWN | S3 | 自有整理 | 例程索引 `examples.md` | — | 本仓库自有 | 例程 | 本仓库 | [`examples.md`](examples.md) | self-owned | 自有 | file | `docs/bluepill/examples.md` | 见 §6 | 已核验 | 2026-11-04 本实施轮落盘并静态核对 | 与根级 `examples/` 相对链接互指核对 | — | — | 资料侧索引 + CubeIDE/MDK → PlatformIO 适配成本；与 [`../../examples/INDEX.md`](../../examples/INDEX.md) 互指 |
+| S3-OWN | S3 | 自有整理 | 例程索引 `examples.md` | — | 本仓库自有 | 例程 | 本仓库 | [`examples.md`](examples.md) | self-owned | 自有 | file | `docs/bluepill/examples.md` | 见 §6 | 已核验 | 2026-11-05 与副本链接改造同轮复核 | 与本目录 `examples/` 副本相对链接互指核对 | — | — | 资料侧索引 + CubeIDE/MDK → PlatformIO 适配成本；与 [`examples/INDEX.md`](examples/INDEX.md) 互指 |
 | S3-OWN | S3 | 自有整理 | 归属声明 `ATTRIBUTION.md` | — | 本仓库自有 | 许可·法务 | 本仓库 | [`ATTRIBUTION.md`](ATTRIBUTION.md) | self-owned | 自有 | file | `docs/bluepill/ATTRIBUTION.md` | 见 §6 | 已核验 | 2026-11-04 本实施轮落盘并静态核对 | 适用范围仅限 #7 的声明已核对 | — | 指向 #7 | **只解决 #7 的署名与来源可追溯**，不构成 ST 的 `prior written permission`，不得为 ST PDF / 正点原子资料开绿灯 |
 | S3-OWN | S3 | 自有整理 | 板级映射头 `bluepill.h` | — | 本仓库自有 | 板卡定义（信号→引脚） | 本仓库 | [`../../Core/Inc/bluepill.h`](../../Core/Inc/bluepill.h) | self-owned | 自有 | file | `Core/Inc/bluepill.h` | 见 §6 | 已核验 | 2026-11-04 本实施轮落盘，宏依据逐条对照 `.ioc` / `board-pinout.md` | 每个 `BP_*` 宏均可在 `.ioc` 或 #8 板卡页找到依据；`.ioc` 未被改动 | — | — | 人工维护，只描述「信号→引脚」；模式 / AF / 上下拉 / 时钟由 `.ioc` 决定；include 在 `main.h` 的 USER CODE Includes 块内 |
-| S3-OWN | S3 | 自有整理 | 根级 `examples/`（2 个自有示例 + 索引 + 3 篇配方） | — | 本仓库自有 | 例程 | 本仓库 | [`../../examples/INDEX.md`](../../examples/INDEX.md) | self-owned | 自有 | file | `examples/**` | 见 §6 | 已核验 | 2026-11-04 本实施轮落盘并静态核对 | INDEX 每行验证等级、配方四栏、与资料侧互指链接核对；**不进 `Core/`、不改 `.ioc`、不参与固件构建** | — | — | 按 Q4 只有 2 个自有最小示例（GPIO 点灯、USART1 115200），标注「仅参考、需适配」、L0/L2，**不要求 `pio run`**；复用仓库已有 `test/stdio_port_test.c`（L2），不反向搬 B 仓复制品 |
+| S3-OWN | S3 | 自有整理 | 根级 `examples/`（2 个自有示例 + 索引 + 3 篇配方） | — | 本仓库自有 | 例程 | 本仓库 | [`examples/INDEX.md`](examples/INDEX.md) | self-owned | 自有 | file | `examples/**`（原件）+ `docs/bluepill/examples/**`（副本） | 见 §6 | 已核验 | 2026-11-05 副本落盘并逐条核对链接 | INDEX 每行验证等级、配方四栏、副本内相对链接层级重算核对；**不进 `Core/`、不改 `.ioc`、不参与固件构建** | — | — | 按 Q4 只有 2 个自有最小示例（GPIO 点灯、USART1 115200），标注「仅参考、需适配」、L0/L2，**不要求 `pio run`**；复用仓库已有 `test/stdio_port_test.c`（L2），不反向搬 B 仓复制品；`docs/bluepill/examples/` 为资料区副本（同步、根级为准，`--drop-examples` 不删副本） |
 
 ---
 
@@ -141,27 +141,49 @@
 | **主台账总条数** | **19** 条（§2.7 的 `1, 2, 2b, 3, 4, 5, 5b, 6, 6b, 7, 8, 8b, 9, 9b, 10, 11, 12, 13, 14`），另有 S3 自有文件清单 7 行（§2）、失效项 6 条（§3） |
 | **按 tier 分组** | **S1 = 11** 条（`1, 2, 2b, 3, 4, 5, 5b, 6, 6b, 12, 13`）；**S2 = 8** 条（`7, 8, 8b, 9, 9b, 10, 11, 14`）；**S3 = 7** 行自有文件（不计入 19 条主台账） |
 | **link-only 条数（`store = link`）** | **16** 条（`1, 2, 2b, 3, 4, 5, 5b, 6, 6b, 8b, 9b, 10, 11, 12, 13, 14`）；另有 `store = quote` 1 条（#8）、`store = file` 2 条（#7 / #9） |
-| **实际入库文件数（`docs/bluepill/`）** | **7** 个：`README.md`、`SOURCES.md`、`board-pinout.md`、`examples.md`、`ATTRIBUTION.md`、`genericSTM32F103C8.json`（#9 资料副本）、`original-schematic.pdf`（#7 条件入库） |
-| **合计体积（`docs/bluepill/` 入库文件实测字节数）** | **实测合计 231815 B ≈ 226 KB ≤ 15 MB**（Q12 硬上限，未收紧到 5 MB）；逐文件实测见下表 |
-| **最近核验日期** | **2026-11-04**（PM 逐行清单记录 + 本实施轮 #7 / #9 实测下载、#8 页面 WebFetch 复核） |
+| **实际入库文件数（`docs/bluepill/`）** | **18** 个：顶层 **7** 个（`README.md`、`SOURCES.md`、`board-pinout.md`、`examples.md`、`ATTRIBUTION.md`、`genericSTM32F103C8.json`（#9 资料副本）、`original-schematic.pdf`（#7 条件入库））+ `examples/` 副本 **11** 个（2026-11-05 新增，见下方第二张表） |
+| **合计体积（`docs/bluepill/` 入库文件实测字节数）** | **实测合计 272770 B ≈ 266 KB ≤ 15 MB**（Q12 硬上限，未收紧到 5 MB）；逐文件实测见下表 |
+| **最近核验日期** | **2026-11-05**（2026-11-04 PM 逐行清单记录 + #7 / #9 实测下载、#8 页面 WebFetch 复核；2026-11-05 新增 `examples/` 副本并重算体积） |
 
-逐文件实测（本实施轮写完后用 `wc -c` 实测，单位 B）：
+逐文件实测（顶层 7 个，2026-11-05 用 `wc -c` 复测，单位 B）：
 
 | 文件 | 实测字节数 |
 | ---- | ---------- |
 | `docs/bluepill/README.md` | 17413 |
-| `docs/bluepill/SOURCES.md` | 31931（本文件，含本汇总表；实测值随本表微调，见下方注释） |
-| `docs/bluepill/board-pinout.md` | 15746 |
-| `docs/bluepill/examples.md` | 10092 |
+| `docs/bluepill/SOURCES.md` | 见下方自引用说明（本表写完后复测） |
+| `docs/bluepill/board-pinout.md` | 15802 |
+| `docs/bluepill/examples.md` | 11930 |
 | `docs/bluepill/ATTRIBUTION.md` | 4111 |
 | `docs/bluepill/genericSTM32F103C8.json` | 1150 |
 | `docs/bluepill/original-schematic.pdf` | 151372 |
-| **合计（7 个入库文件）** | **231815 B ≈ 226 KB**（`du -sh docs/bluepill` 实测 244K，含文件系统块开销；入库字节数口径为准） |
+| **小计（顶层 7 个）** | **235172 B**（不含 `SOURCES.md` 自身时 201778 B） |
+
+`docs/bluepill/examples/` 副本 11 个文件（根级 `examples/` 的镜像，2026-11-05 新增，同步口径见 `examples/README.md` 顶部说明）：
+
+| 文件 | 实测字节数 |
+| ---- | ---------- |
+| `docs/bluepill/examples/INDEX.md` | 3115 |
+| `docs/bluepill/examples/README.md` | 6288 |
+| `docs/bluepill/examples/gpio-blink/README.md` | 2748 |
+| `docs/bluepill/examples/gpio-blink/blink.c` | 1663 |
+| `docs/bluepill/examples/gpio-blink/blink.h` | 2187 |
+| `docs/bluepill/examples/recipes/gpio-blink.md` | 4649 |
+| `docs/bluepill/examples/recipes/host-regression.md` | 4214 |
+| `docs/bluepill/examples/recipes/usart1-115200.md` | 5103 |
+| `docs/bluepill/examples/usart1-115200/README.md` | 3079 |
+| `docs/bluepill/examples/usart1-115200/usart1_echo.c` | 1554 |
+| `docs/bluepill/examples/usart1-115200/usart1_echo.h` | 2998 |
+| **小计（副本 11 个）** | **37598 B** |
+
+| 口径 | 值 |
+| ---- | -- |
+| **合计（18 个入库文件）** | **272770 B ≈ 266 KB**（`du -sb docs/bluepill` 实测 272770 B；`du -sh` 另计文件系统块开销） |
 
 > 注：`SOURCES.md` 记录自身字节数属于自引用，回填本表后其字节数会有微调；
-> 体积判据以「本次新增且将纳入 git 跟踪的文件合计字节数」为准，最终以
-> `wc -c docs/bluepill/*` 实测求和为准，恒远低于 15 MB。
+> 本表「合计」取复测值（顶层 7 个 + 副本 11 个）；最终以
+> `find docs/bluepill -type f -printf '%s\n' | awk '{s+=$1} END {print s}'` 逐文件求和实测为准，恒远低于 15 MB。
 
 > 体积判据与版权判据**相互独立**：不得以「体积没超 15 MB」论证 ST 官方 PDF 可以入库原件（§5.4 判据 5）。
 > 统计口径为「本次新增且将纳入 git 跟踪的文件合计字节数」；`du -sh docs/bluepill` 仅作辅助观察。
-> 根级 `examples/` 与 `Core/Inc/bluepill.h` 不计入 `docs/bluepill/` 体积，但已在 §2 登记。
+> 根级 `examples/`（**worktree 实测 37,025 B**，非 HEAD 旧值）与 `Core/Inc/bluepill.h` 不计入 `docs/bluepill/` 体积，但已在 §2 登记；
+> `docs/bluepill/examples/` 是**资料区副本**，在 `docs/bluepill/` 内，**计入**体积。

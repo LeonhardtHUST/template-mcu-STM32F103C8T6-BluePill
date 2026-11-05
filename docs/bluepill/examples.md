@@ -1,7 +1,10 @@
 # Blue Pill 例程索引与适配成本（资料侧索引）
 
 > 本文件是 **`docs/bluepill/` 资料生态位里的例程索引**（S3 自有），只放链接、索引与适配说明；
-> **实际可直接复用的源码在仓库根级 [`examples/`](../../examples/INDEX.md)**，两处用相对链接互指。
+> **实际可直接复用的源码在仓库根级 `examples/`；本目录下的 [`examples/`](examples/INDEX.md)
+> 是它的镜像副本**（两处需同步、**根级为准**）。副本存在的意义是让
+> `scripts/init-project.sh|ps1 --drop-examples` 删掉根级示例后资料区不自断链 ——
+> 该参数只删根级 `examples/`，不动本目录副本。
 > 原始整包例程（Keil / CubeIDE 工程、`Drivers/` 副本、`.hex`、`.uvprojx` 等）**一律不入库**。
 > 逐条资料的直链、编号、许可、访问证据见 [`SOURCES.md`](SOURCES.md)。
 
@@ -11,7 +14,7 @@
 | ---- | ----------- | -------------- | -------------- |
 | **#5 STM32CubeF1 Examples**（NUCLEO-F103RB） | S1 厂商官方·芯片级；STM32 Projects = ST SLA0044，basic Examples 与 HAL = BSD-3-Clause（#5b `LICENSE.md` 实测 1,642 B） | 只存官方直链索引，**不入库原件**（ST Terms of Use） | 否：面向 NUCLEO-F103RB / CubeIDE，且属另一块板（LQFP64 / F103RB / 128 KB），须逐文件判许可后适配 |
 | **#11 miniwinwm/BluePillDemo** | S2 社区权威·板级；MIT（Copyright (c) 2018 John Blaiklock），作者标 `No further updates`、最后提交 2023-05-14 | 只存链接索引 | 否：CubeIDE 工程需适配 PlatformIO，已停更；如取单文件须保留 MIT 声明 |
-| **根级 [`examples/`](../../examples/INDEX.md)** | **S3 本仓库自有** | **入库 2 个自有最小示例源码**（GPIO 点灯、USART1 115200） | 是：仅 `.c` / `.h` + 说明，默认可自由再分发 |
+| **[`examples/`](examples/INDEX.md)**（副本，原件在根级） | **S3 本仓库自有** | **入库 2 个自有最小示例源码**（GPIO 点灯、USART1 115200） | 是：仅 `.c` / `.h` + 说明，默认可自由再分发 |
 
 > **官方边界**：#5 是「大厂官方例程」，但针对 **NUCLEO-F103RB 评估板**，不是 Blue Pill 例程；
 > #11 是社区 MIT 例程；本仓库 `examples/` 是自研源码。三者都**不得标成「ST 官方 Blue Pill 例程」**（[`README.md`](README.md) §0）。
@@ -25,7 +28,7 @@
 | 5b | CubeF1 `LICENSE.md` | ST / S1 | 许可原文 | 组件许可表（实测 1,642 B） | <https://github.com/STMicroelectronics/STM32CubeF1/blob/master/LICENSE.md> | 只作许可判断引用 |
 | 11 | miniwinwm/BluePillDemo | John Blaiklock / S2 社区权威·板级 | 例程（CubeIDE） | MIT，Copyright (c) 2018 John Blaiklock | <https://github.com/miniwinwm/BluePillDemo> | 只存链接索引（约 30 工程，未实测；已停更） |
 | 12 | ST 社区「STM32 Blue Pill」帖 | ST 官方社区（版主发言，非产品文档） | 事实依据 | 社区内容，仅引用 | <https://community.st.com/others-hardware-and-software-57/stm32-blue-pill-63640> | 其 Best answer 指向 #11；用于说明官方立场，不是例程 |
-| S3-OWN | 根级 `examples/` 自有示例 | 本仓库 / S3 自有 | GPIO 点灯、USART1 115200 + 配方 + 主机回归说明 | `self-owned` | [`../../examples/INDEX.md`](../../examples/INDEX.md) | **入库**，见 §3 |
+| S3-OWN | `examples/` 自有示例（本目录为副本） | 本仓库 / S3 自有 | GPIO 点灯、USART1 115200 + 配方 + 主机回归说明 | `self-owned` | [`examples/INDEX.md`](examples/INDEX.md) | **入库**，见 §3 |
 
 ## 2. 适配成本：CubeIDE / MDK → PlatformIO
 
@@ -56,10 +59,10 @@
 | `.mxproject`、`.cproject` / `.project` | **丢掉** | 生成物元数据；本模板刻意入库自己的 `.mxproject`（相对路径、可审阅 diff），不要拿例程的覆盖 |
 | PDF 原理图 / 屏幕资料 / 整包 zip | **不入库** | 版权与体积见 [`README.md`](README.md) §7；本目录禁止 `*.pdf`（#7 条件项除外）/ `*.zip` / `Drivers/` 副本 |
 
-### 2.3 接入路径（统一 5 步，根级 `examples/README.md` 同口径）
+### 2.3 接入路径（统一 5 步，`examples/README.md` 与根级同口径）
 
 1. **把外设配置抄进本仓根目录的 `.ioc`**（`Mcu.IP*` / `Mcu.Pin*` / `<Pin>.Signal` / `<IP>.IPParameters` 白名单一起补），CubeMX GUI 或 `scripts/cubemx-generate.mx` 生成。
-2. **核验生成物**（L4）：日志无 `Cannot map` / `OptionalMessage_ERROR`，`Core/Src/main.c` 里出现对应的 `MX_xxx_Init()`（见 `AGENTS.md` §2.3 / `TEMPLATE-PLACEHOLDERS.md` D5）。
+2. **核验生成物**（L4）：`Cannot map signal` 必须为 0，`OptionalMessage_ERROR` **只允许出现在豁免清单里**（`Pin<N> (VP_RIF_VS_RIF1)` 一条 + DMA 导入顺序噪音每个请求块恰好 8 条；两类都需在提交正文注明），`Core/Src/main.c` 里出现对应的 `MX_xxx_Init()`（门槛见 `AGENTS.md` §2.3 与 `TEMPLATE-PLACEHOLDERS.md` D5）。
 3. **只拷源码**：业务代码放进 USER CODE 块或独立 `.c` / `.h`；CubeMX 生成物、Keil 样板、`Drivers/` 一律丢。
 4. **`pio run`**（L3）：记录 PlatformIO 报告的 Flash / RAM 字节数。
 5. **按 L2 / L3 / L5 验证**：能主机编译的纯 C 先跑 L2；影响运行时行为的改动最终必须 L5 实板确认（LED / 串口 / 波形）——**「编译通过」不等于「能用」**。
@@ -74,15 +77,35 @@
 - 从任何外部例程取单文件前，先确认该文件属于哪个许可组件，并在 `SOURCES.md` 登记来源与许可；**不确定就只留链接**。
 - 本仓库自研的 `examples/` 不存在上述许可链问题，是默认推荐的可复用源码。
 
-## 3. 与根级 `examples/` 互指
+## 3. 与 `examples/` 副本互指（原件在根级）
 
-| 本文件（资料侧） | 根级（源码侧） | 关系 |
-| ---------------- | -------------- | ---- |
-| 本文件 §1 例程索引、§2 适配成本 | [`../../examples/INDEX.md`](../../examples/INDEX.md) | 索引里 S3-OWN 两行指向根级示例 |
-| — | [`../../examples/README.md`](../../examples/README.md) | 统一接入路径、配方四栏模板、验证等级口径 |
-| — | [`../../examples/recipes/`](../../examples/recipes/) | GPIO / USART1 / 主机回归三篇配方（四栏） |
-| — | `../../examples/gpio-blink/`、`../../examples/usart1-115200/` | 2 个自有最小示例源码（仅 `.c` / `.h` + 说明） |
+| 本文件（资料侧） | `docs/bluepill/examples/`（副本） | 关系 |
+| ---------------- | ------------------------------- | ---- |
+| 本文件 §1 例程索引、§2 适配成本 | [`examples/INDEX.md`](examples/INDEX.md) | 索引里 S3-OWN 一行指向示例；副本与根级 `examples/` 同构、同步、**根级为准** |
+| — | [`examples/README.md`](examples/README.md) | 统一接入路径、配方四栏模板、验证等级口径 |
+| — | [`examples/recipes/`](examples/recipes/) | GPIO / USART1 / 主机回归三篇配方（四栏） |
+| — | `examples/gpio-blink/`、`examples/usart1-115200/` | 2 个自有最小示例源码（仅 `.c` / `.h` + 说明） |
 | — | [`../../test/stdio_port_test.c`](../../test/stdio_port_test.c) | 复用 A 已有的纯 C 主机回归样例（L2），**不反向搬 B 仓的复制品** |
+
+**同步方式**（根级为准；改完根级示例后按下述三步刷新副本，**不要手改副本内容**）：
+
+```bash
+rm -rf docs/bluepill/examples && cp -r examples docs/bluepill/examples
+```
+
+复制后副本里的相对链接会比原来浅一层以上，需按同一套规则批量重写（三个层级）：
+
+| 原链接（根级 `examples/` 视角） | 副本内应改为 |
+| ------------------------------- | ------------ |
+| `../docs/bluepill/X.md`（例：`../docs/bluepill/examples.md`） | `../X.md`（例：`../examples.md`；`recipes/` 下为 `../../X.md`） |
+| `../Core/…`、`../AGENTS.md`、`../test/…`、`../TEMPLATE-PLACEHOLDERS.md` | 加两层 `../`（`recipes/` 与示例子目录下加三层） |
+| `examples/` 内部的互相引用（`gpio-blink/…`、`recipes/…`、`INDEX.md`、`README.md`） | **保持不变**（副本结构同构） |
+
+副本内链接是否仍然可达，改动后请逐条 `ls` 抽查：把副本里所有以 `../` 开头的链接目标拼成路径，
+确认都落在本仓库真实文件上（不要只看渲染，渲染器不会报死链）。
+
+> **注意**：上面的 `cp -r` 会整目录覆盖，`docs/bluepill/examples/README.md` 顶部那段
+> 「本目录是副本」的 blockquote 需在镜像后重新贴回（它只属于副本，根级没有）。
 
 **两边都不进 `Core/`、不改 `.ioc`、不参与固件构建**（`platformio.ini` 的 `src_dir = Core/Src`，`examples/` 与 `test/` 均在编译范围之外）。
 
